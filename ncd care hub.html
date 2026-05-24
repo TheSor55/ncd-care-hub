@@ -1,0 +1,1186 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NCD Care Hub</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --ink-900:#0A0E1A;--ink-800:#111827;--ink-700:#1C2333;--ink-600:#253047;
+  --ink-500:#374161;--ink-400:#4B5680;
+  --slate-300:#8892A4;--slate-200:#B0B8C8;--slate-100:#D1D8E4;--slate-50:#EEF1F6;
+  --white:#FFFFFF;--canvas:#F4F6FA;
+  --teal-600:#0E7C6B;--teal-500:#12A08A;--teal-400:#15C4AA;--teal-100:#D0F5EF;--teal-50:#E8FAF7;
+  --amber-600:#B45309;--amber-400:#F59E0B;--amber-100:#FEF3C7;--amber-50:#FFFBEB;
+  --rose-600:#BE123C;--rose-400:#FB7185;--rose-100:#FFE4E6;--rose-50:#FFF1F2;
+  --blue-600:#1D4ED8;--blue-400:#60A5FA;--blue-100:#DBEAFE;--blue-50:#EFF6FF;
+  --violet-600:#6D28D9;--violet-100:#EDE9FE;
+  --r:6px;--r-lg:10px;--r-xl:14px;
+  --shadow-xs:0 1px 2px rgba(0,0,0,.06);
+  --shadow-sm:0 2px 6px rgba(0,0,0,.08),0 1px 2px rgba(0,0,0,.06);
+  --shadow-md:0 4px 16px rgba(0,0,0,.10),0 2px 4px rgba(0,0,0,.06);
+  --shadow-lg:0 12px 32px rgba(0,0,0,.14),0 4px 8px rgba(0,0,0,.08);
+  --font:'Sarabun','IBM Plex Sans Thai',system-ui,sans-serif;
+  --mono:'IBM Plex Mono',monospace;
+  --sidebar-w:232px;
+}
+html{font-size:15px;-webkit-font-smoothing:antialiased}
+body{font-family:var(--font);background:var(--canvas);color:var(--ink-800);line-height:1.6;display:flex;min-height:100vh}
+
+/* ─── SIDEBAR ─── */
+.sb{width:var(--sidebar-w);background:var(--ink-900);display:flex;flex-direction:column;position:fixed;inset:0 auto 0 0;z-index:200;border-right:1px solid rgba(255,255,255,.05)}
+.sb-logo{padding:20px 18px 16px;border-bottom:1px solid rgba(255,255,255,.07);display:flex;align-items:center;gap:10px}
+.sb-logo-mark{width:32px;height:32px;background:linear-gradient(135deg,var(--teal-400),var(--teal-600));border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;box-shadow:0 4px 12px rgba(21,196,170,.35)}
+.sb-logo-text h1{font-size:14px;font-weight:700;color:var(--white);letter-spacing:.2px}
+.sb-logo-text p{font-size:11px;color:var(--slate-300);margin-top:1px}
+.sb-section{padding:18px 12px 4px;font-size:10px;font-weight:600;color:var(--ink-400);letter-spacing:1.2px;text-transform:uppercase}
+.sb-item{display:flex;align-items:center;gap:9px;padding:8px 10px;margin:1px 6px;border-radius:var(--r);border:none;background:transparent;color:var(--slate-300);font-family:var(--font);font-size:13.5px;font-weight:500;cursor:pointer;transition:background .15s,color .15s;text-align:left;width:calc(100% - 12px)}
+.sb-item:hover{background:rgba(255,255,255,.06);color:var(--white)}
+.sb-item.active{background:rgba(21,196,170,.12);color:var(--teal-400)}
+.sb-item.active .sb-icon{color:var(--teal-400)}
+.sb-icon{font-size:15px;width:18px;text-align:center;flex-shrink:0;opacity:.7}
+.sb-item.active .sb-icon,.sb-item:hover .sb-icon{opacity:1}
+.sb-badge{margin-left:auto;background:var(--teal-600);color:var(--white);font-size:10px;padding:1px 6px;border-radius:20px;font-weight:600}
+.sb-footer{margin-top:auto;padding:14px 16px;border-top:1px solid rgba(255,255,255,.07)}
+.sb-footer-pill{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:var(--r);padding:8px 10px}
+.sb-footer-dot{width:7px;height:7px;border-radius:50%;background:var(--teal-400);flex-shrink:0;box-shadow:0 0 6px var(--teal-400)}
+.sb-footer-text{font-size:11.5px;color:var(--slate-200)}
+.sb-footer-text strong{color:var(--white);font-weight:600;display:block;font-size:12px}
+
+/* ─── MAIN ─── */
+.main{margin-left:var(--sidebar-w);flex:1;display:flex;flex-direction:column;min-height:100vh}
+
+/* ─── TOPBAR ─── */
+.topbar{background:var(--white);border-bottom:1px solid var(--slate-100);padding:0 28px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:var(--shadow-xs)}
+.topbar-left{display:flex;align-items:center;gap:8px}
+.topbar-crumb{font-size:13px;color:var(--slate-300)}
+.topbar-title{font-size:15px;font-weight:600;color:var(--ink-800)}
+.topbar-right{display:flex;align-items:center;gap:10px}
+.topbar-date{font-size:12.5px;color:var(--slate-300);font-variant-numeric:tabular-nums}
+.status-pill{display:flex;align-items:center;gap:6px;background:var(--teal-50);border:1px solid var(--teal-100);color:var(--teal-600);font-size:11.5px;font-weight:600;padding:5px 10px;border-radius:20px}
+.status-dot{width:6px;height:6px;border-radius:50%;background:var(--teal-500);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.6;transform:scale(.85)}}
+
+/* ─── PAGE ─── */
+.page-wrap{padding:24px 28px;flex:1}
+.page{display:none}
+.page.active{display:block;animation:fadeUp .2s ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.page-header{margin-bottom:22px}
+.page-header h2{font-size:20px;font-weight:700;color:var(--ink-900);letter-spacing:-.3px}
+.page-header p{font-size:13px;color:var(--slate-300);margin-top:3px}
+
+/* ─── CARDS ─── */
+.card{background:var(--white);border-radius:var(--r-lg);border:1px solid var(--slate-100);padding:20px 22px;box-shadow:var(--shadow-xs);transition:box-shadow .2s}
+.card:hover{box-shadow:var(--shadow-sm)}
+.card-head{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:18px}
+.card-title{font-size:14px;font-weight:600;color:var(--ink-800)}
+.card-sub{font-size:12px;color:var(--slate-300);margin-top:2px}
+.card-divider{border:none;border-top:1px solid var(--slate-50);margin:16px -22px;padding:0 22px}
+
+/* ─── KPI CARDS ─── */
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px}
+.kpi{background:var(--white);border:1px solid var(--slate-100);border-radius:var(--r-lg);padding:18px 20px;box-shadow:var(--shadow-xs);transition:transform .18s,box-shadow .18s;position:relative;overflow:hidden}
+.kpi:hover{transform:translateY(-2px);box-shadow:var(--shadow-sm)}
+.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;border-radius:var(--r-lg) var(--r-lg) 0 0}
+.kpi.blue::before{background:linear-gradient(90deg,var(--blue-600),var(--blue-400))}
+.kpi.teal::before{background:linear-gradient(90deg,var(--teal-600),var(--teal-400))}
+.kpi.amber::before{background:linear-gradient(90deg,var(--amber-600),var(--amber-400))}
+.kpi.rose::before{background:linear-gradient(90deg,var(--rose-600),var(--rose-400))}
+.kpi-label{font-size:11.5px;font-weight:600;color:var(--slate-300);letter-spacing:.4px;text-transform:uppercase;margin-bottom:10px}
+.kpi-value{font-size:32px;font-weight:700;letter-spacing:-1px;line-height:1}
+.kpi.blue .kpi-value{color:var(--blue-600)}
+.kpi.teal .kpi-value{color:var(--teal-600)}
+.kpi.amber .kpi-value{color:var(--amber-600)}
+.kpi.rose .kpi-value{color:var(--rose-600)}
+.kpi-hint{font-size:11.5px;color:var(--slate-300);margin-top:6px}
+
+/* ─── BUTTONS ─── */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:0 14px;height:34px;border-radius:var(--r);border:none;font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;white-space:nowrap;text-decoration:none}
+.btn-primary{background:var(--teal-500);color:var(--white)}
+.btn-primary:hover{background:var(--teal-600);box-shadow:0 4px 12px rgba(18,160,138,.3)}
+.btn-secondary{background:var(--ink-800);color:var(--white)}
+.btn-secondary:hover{background:var(--ink-900)}
+.btn-outline{background:transparent;color:var(--ink-700);border:1px solid var(--slate-100)}
+.btn-outline:hover{background:var(--slate-50);border-color:var(--slate-200)}
+.btn-ghost{background:transparent;color:var(--slate-300);border:none}
+.btn-ghost:hover{background:var(--slate-50);color:var(--ink-700)}
+.btn-danger{background:var(--rose-50);color:var(--rose-600);border:1px solid var(--rose-100)}
+.btn-danger:hover{background:var(--rose-100)}
+.btn-sm{height:28px;padding:0 10px;font-size:12px;border-radius:var(--r)}
+.btn-icon{width:32px;height:32px;padding:0;justify-content:center;font-size:14px}
+
+/* ─── FORMS ─── */
+.form-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.form-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+.form-group{display:flex;flex-direction:column;gap:5px}
+.form-label{font-size:12px;font-weight:600;color:var(--slate-300);letter-spacing:.2px}
+.form-required{color:var(--rose-400)}
+.form-input{height:36px;padding:0 12px;border:1.5px solid var(--slate-100);border-radius:var(--r);font-family:var(--font);font-size:13.5px;color:var(--ink-800);background:var(--white);outline:none;transition:border-color .15s,box-shadow .15s}
+.form-input:focus{border-color:var(--teal-400);box-shadow:0 0 0 3px rgba(21,196,170,.1)}
+.form-input::placeholder{color:var(--slate-200)}
+.form-select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%238892A4' d='M6 8L1 3h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:28px;cursor:pointer}
+.form-textarea{height:auto;padding:10px 12px;resize:vertical;min-height:72px;line-height:1.6}
+.form-section-label{font-size:11px;font-weight:700;color:var(--slate-200);letter-spacing:1px;text-transform:uppercase;padding:12px 0 6px;border-bottom:1px solid var(--slate-50);margin-bottom:14px}
+.form-hint{font-size:11.5px;color:var(--slate-300)}
+
+/* ─── TABLE ─── */
+.table-wrap{overflow-x:auto;margin:0 -22px}
+.data-table{width:100%;border-collapse:collapse;font-size:13.5px}
+.data-table th{padding:10px 14px;text-align:left;font-size:11px;font-weight:700;color:var(--slate-300);letter-spacing:.6px;text-transform:uppercase;background:var(--canvas);border-bottom:1px solid var(--slate-100);white-space:nowrap}
+.data-table th:first-child{padding-left:22px}
+.data-table th:last-child{padding-right:22px}
+.data-table td{padding:12px 14px;border-bottom:1px solid var(--slate-50);color:var(--ink-800);vertical-align:middle}
+.data-table td:first-child{padding-left:22px}
+.data-table td:last-child{padding-right:22px}
+.data-table tbody tr:hover td{background:#FAFBFD}
+.data-table tbody tr:last-child td{border-bottom:none}
+
+/* ─── BADGES / CHIPS ─── */
+.chip{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:20px;font-size:11.5px;font-weight:600;line-height:1}
+.chip::before{content:'';width:5px;height:5px;border-radius:50%;flex-shrink:0}
+.chip-teal{background:var(--teal-50);color:var(--teal-600)}.chip-teal::before{background:var(--teal-500)}
+.chip-amber{background:var(--amber-50);color:var(--amber-600)}.chip-amber::before{background:var(--amber-400)}
+.chip-rose{background:var(--rose-50);color:var(--rose-600)}.chip-rose::before{background:var(--rose-400)}
+.chip-blue{background:var(--blue-50);color:var(--blue-600)}.chip-blue::before{background:var(--blue-400)}
+.chip-gray{background:var(--slate-50);color:var(--slate-300)}.chip-gray::before{background:var(--slate-200)}
+.chip-violet{background:var(--violet-100);color:var(--violet-600)}.chip-violet::before{background:var(--violet-600)}
+.tag{display:inline-block;padding:2px 8px;border-radius:var(--r);font-size:11.5px;font-weight:700;font-family:var(--mono)}
+.tag-blue{background:var(--blue-50);color:var(--blue-600);border:1px solid var(--blue-100)}
+.tag-slate{background:var(--slate-50);color:var(--slate-300);border:1px solid var(--slate-100)}
+
+/* ─── ALERTS ─── */
+.alert{display:flex;align-items:flex-start;gap:10px;padding:12px 14px;border-radius:var(--r);font-size:13px;margin-bottom:16px;line-height:1.5}
+.alert-icon{font-size:15px;flex-shrink:0;margin-top:1px}
+.alert strong{font-weight:600}
+.alert-teal{background:var(--teal-50);color:var(--teal-600);border:1px solid var(--teal-100)}
+.alert-amber{background:var(--amber-50);color:var(--amber-600);border:1px solid var(--amber-100)}
+.alert-rose{background:var(--rose-50);color:var(--rose-600);border:1px solid var(--rose-100)}
+.alert-blue{background:var(--blue-50);color:var(--blue-600);border:1px solid var(--blue-100)}
+
+/* ─── EMPTY STATE ─── */
+.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px 24px;text-align:center}
+.empty-icon{font-size:36px;margin-bottom:12px;opacity:.45}
+.empty-title{font-size:14px;font-weight:600;color:var(--ink-700);margin-bottom:4px}
+.empty-sub{font-size:13px;color:var(--slate-300)}
+
+/* ─── SEARCH ─── */
+.search-wrap{position:relative}
+.search-wrap input{padding-left:32px}
+.search-wrap::before{content:'⌕';position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:16px;color:var(--slate-200);pointer-events:none;line-height:1}
+
+/* ─── PROGRESS ─── */
+.prog-wrap{height:6px;background:var(--slate-50);border-radius:99px;overflow:hidden;margin-top:6px}
+.prog-bar{height:100%;border-radius:99px;transition:width .6s cubic-bezier(.4,0,.2,1)}
+.prog-teal{background:linear-gradient(90deg,var(--teal-600),var(--teal-400))}
+.prog-amber{background:linear-gradient(90deg,var(--amber-600),var(--amber-400))}
+.prog-rose{background:linear-gradient(90deg,var(--rose-600),var(--rose-400))}
+
+/* ─── CKD HEATMAP ─── */
+.heatmap{width:100%;border-collapse:separate;border-spacing:3px;font-size:12px}
+.heatmap th{padding:8px 10px;background:var(--ink-700);color:var(--slate-100);font-weight:600;border-radius:var(--r);font-size:11px;letter-spacing:.3px}
+.heatmap td{padding:9px 10px;border-radius:var(--r);text-align:center;font-weight:700;font-size:12px;cursor:default;transition:filter .15s,transform .15s}
+.heatmap td.row-h{background:var(--ink-700);color:var(--slate-100);text-align:left;font-size:11.5px}
+.hm-low{background:#C6F6EE;color:#065F46}
+.hm-mod{background:#FEF3C7;color:#92400E}
+.hm-hi{background:#FED7AA;color:#7C2D12}
+.hm-vhi{background:#FEE2E2;color:#7F1D1D}
+.hm-active{outline:2.5px solid var(--teal-500);outline-offset:1px;filter:brightness(1.05);transform:scale(1.04)}
+
+/* ─── CHART BARS ─── */
+.bar-chart{display:flex;align-items:flex-end;gap:6px;height:100px;padding-bottom:22px;position:relative}
+.bar-chart-bar{flex:1;border-radius:4px 4px 0 0;min-height:4px;position:relative;cursor:default;transition:opacity .2s}
+.bar-chart-bar:hover{opacity:.8}
+.bar-chart-bar .b-val{position:absolute;top:-18px;left:50%;transform:translateX(-50%);font-size:10px;font-weight:700;white-space:nowrap}
+.bar-chart-bar .b-lbl{position:absolute;bottom:-18px;left:50%;transform:translateX(-50%);font-size:9.5px;color:var(--slate-300);white-space:nowrap}
+.b-normal{background:var(--teal-100)}.b-normal .b-val{color:var(--teal-600)}
+.b-pre{background:var(--amber-100)}.b-pre .b-val{color:var(--amber-600)}
+.b-ht{background:var(--rose-100)}.b-ht .b-val{color:var(--rose-600)}
+
+/* ─── APPOINTMENT CARD ─── */
+.appt-row{display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid var(--slate-50)}
+.appt-row:last-child{border-bottom:none}
+.appt-date-block{width:44px;text-align:center;flex-shrink:0}
+.appt-date-block .adb-d{font-size:20px;font-weight:700;color:var(--ink-800);line-height:1}
+.appt-date-block .adb-m{font-size:10px;font-weight:600;color:var(--slate-300);text-transform:uppercase;letter-spacing:.5px}
+.appt-divider{width:1px;height:36px;background:var(--slate-100);flex-shrink:0}
+.appt-info{flex:1}
+.appt-name{font-size:13.5px;font-weight:600;color:var(--ink-800)}
+.appt-type{font-size:12px;color:var(--slate-300);margin-top:1px}
+.appt-time{font-size:12px;font-weight:600;color:var(--teal-600);font-family:var(--mono)}
+
+/* ─── REFERRAL CARD ─── */
+.ref-row{padding:12px 14px;border-radius:var(--r);border:1px solid var(--slate-100);margin-bottom:8px;display:flex;justify-content:space-between;align-items:flex-start;background:var(--white)}
+.ref-urgency-bar{width:3px;border-radius:2px;align-self:stretch;flex-shrink:0;margin-right:10px}
+.ref-urgency-routine{background:var(--teal-400)}
+.ref-urgency-urgent{background:var(--amber-400)}
+.ref-urgency-emergency{background:var(--rose-400)}
+
+/* ─── DIST BARS ─── */
+.dist-row{display:flex;align-items:center;gap:10px;margin-bottom:9px}
+.dist-label{font-size:12px;color:var(--slate-300);min-width:52px;font-family:var(--mono);font-weight:500}
+.dist-track{flex:1;height:16px;background:var(--slate-50);border-radius:var(--r)}
+.dist-fill{height:100%;border-radius:var(--r);transition:width .6s cubic-bezier(.4,0,.2,1)}
+.dist-count{font-size:12px;font-weight:700;color:var(--ink-800);min-width:20px;text-align:right}
+
+/* ─── MODAL ─── */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(10,14,26,.5);backdrop-filter:blur(4px);z-index:500;align-items:center;justify-content:center}
+.modal-bg.open{display:flex}
+.modal-box{background:var(--white);border-radius:var(--r-xl);padding:24px;width:90%;max-width:460px;box-shadow:var(--shadow-lg);animation:modalIn .2s ease}
+@keyframes modalIn{from{transform:scale(.96);opacity:0}to{transform:scale(1);opacity:1}}
+.modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+.modal-head h3{font-size:16px;font-weight:700}
+.modal-close{background:var(--slate-50);border:none;width:28px;height:28px;border-radius:var(--r);cursor:pointer;font-size:14px;color:var(--slate-300);display:flex;align-items:center;justify-content:center;transition:background .15s}
+.modal-close:hover{background:var(--slate-100);color:var(--ink-700)}
+
+/* ─── TOAST ─── */
+.toast{position:fixed;bottom:20px;right:20px;display:flex;align-items:center;gap:8px;padding:11px 16px;border-radius:var(--r-lg);font-size:13px;font-weight:500;z-index:999;transform:translateY(20px);opacity:0;transition:all .25s cubic-bezier(.4,0,.2,1);box-shadow:var(--shadow-lg);pointer-events:none;max-width:320px}
+.toast.show{transform:translateY(0);opacity:1}
+.toast-success{background:var(--ink-900);color:var(--white);border-left:3px solid var(--teal-400)}
+.toast-error{background:var(--ink-900);color:var(--white);border-left:3px solid var(--rose-400)}
+.toast-icon{font-size:15px;flex-shrink:0}
+
+/* ─── UTILS ─── */
+.row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.flex-1{flex:1}
+.mt-4{margin-top:4px}.mt-8{margin-top:8px}.mt-12{margin-top:12px}.mt-16{margin-top:16px}.mt-20{margin-top:20px}
+.mb-4{margin-bottom:4px}.mb-8{margin-bottom:8px}.mb-12{margin-bottom:12px}.mb-16{margin-bottom:16px}
+.text-xs{font-size:12px}.text-sm{font-size:13px}.text-muted{color:var(--slate-300)}
+.font-mono{font-family:var(--mono)}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
+.two-col-3-7{display:grid;grid-template-columns:3fr 4fr;gap:16px;align-items:start}
+.three-col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+.val-big{font-size:34px;font-weight:700;letter-spacing:-1px;line-height:1;color:var(--teal-600)}
+.val-unit{font-size:12px;color:var(--slate-300);font-weight:500;margin-top:2px}
+.section-divider{display:flex;align-items:center;gap:10px;margin:20px 0 14px}
+.section-divider span{font-size:11px;font-weight:700;color:var(--slate-200);letter-spacing:1px;text-transform:uppercase;white-space:nowrap}
+.section-divider::before,.section-divider::after{content:'';flex:1;height:1px;background:var(--slate-50)}
+.section-divider::before{max-width:0}
+
+@media(max-width:900px){
+  .sb{transform:translateX(-100%);transition:transform .25s}
+  .sb.open{transform:translateX(0)}
+  .main{margin-left:0}
+  .kpi-grid{grid-template-columns:1fr 1fr}
+  .two-col,.two-col-3-7{grid-template-columns:1fr}
+  .form-grid-2,.form-grid-3{grid-template-columns:1fr}
+  .page-wrap{padding:16px}
+  #mob-menu{display:flex!important}
+}
+#mob-menu{display:none;background:none;border:none;font-size:22px;cursor:pointer;color:var(--ink-700);padding:4px;line-height:1}
+@media print{.sb,.topbar,.btn,.modal-bg{display:none!important}.main{margin-left:0}}
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sb" id="sidebar">
+  <div class="sb-logo">
+    <div class="sb-logo-mark">🏥</div>
+    <div class="sb-logo-text">
+      <h1>NCD Care Hub</h1>
+      <p>ระบบดูแล NCDs ชุมชน</p>
+    </div>
+  </div>
+
+  <span class="sb-section">ภาพรวม</span>
+  <button class="sb-item active" onclick="go('dashboard',this)"><span class="sb-icon">◉</span>Dashboard</button>
+
+  <span class="sb-section">จัดการผู้ป่วย</span>
+  <button class="sb-item" onclick="go('patient-list',this)"><span class="sb-icon">⊞</span>รายชื่อผู้ป่วย</button>
+  <button class="sb-item" onclick="go('add-patient',this)"><span class="sb-icon">⊕</span>เพิ่มผู้ป่วย</button>
+
+  <span class="sb-section">เครื่องมือคลินิก</span>
+  <button class="sb-item" onclick="go('ckd',this)"><span class="sb-icon">⬡</span>คัดกรอง CKD</button>
+  <button class="sb-item" onclick="go('monitor',this)"><span class="sb-icon">⌇</span>กำกับตนเอง</button>
+  <button class="sb-item" onclick="go('appt',this)"><span class="sb-icon">▦</span>นัดหมาย</button>
+
+  <span class="sb-section">สรุป</span>
+  <button class="sb-item" onclick="go('reports',this)"><span class="sb-icon">▤</span>รายงาน</button>
+  <button class="sb-item" onclick="go('refer',this)"><span class="sb-icon">⇢</span>ส่งต่อผู้ป่วย</button>
+
+  <div class="sb-footer">
+    <div style="padding:0 4px 10px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+        <div style="width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,var(--teal-500),var(--teal-600));display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;flex-shrink:0">ธ</div>
+        <div>
+          <div style="font-size:12px;font-weight:700;color:var(--white);line-height:1.3">ธัญชนก สุวรรณรงค์</div>
+          <div style="font-size:10.5px;color:var(--slate-300);margin-top:1px">พยาบาลวิชาชีพชำนาญการ</div>
+        </div>
+      </div>
+      <div style="font-size:10.5px;color:var(--slate-300);line-height:1.6;padding-left:2px">
+        รพ.สต.หนองค้อ · อ.ศรีราชา<br>จ.ชลบุรี
+      </div>
+    </div>
+    <div class="sb-footer-pill">
+      <div class="sb-footer-dot"></div>
+      <div class="sb-footer-text"><strong>พร้อมใช้งาน</strong>บันทึกในเครื่อง · ออฟไลน์ได้</div>
+    </div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<div class="main">
+  <header class="topbar">
+    <div class="topbar-left">
+      <button id="mob-menu" onclick="document.getElementById('sidebar').classList.toggle('open')">☰</button>
+      <span class="topbar-crumb text-muted text-sm">รพ.สต.หนองค้อ · ศรีราชา</span>
+      <span class="topbar-crumb text-muted text-sm">/</span>
+      <span class="topbar-title" id="pg-title">Dashboard</span>
+    </div>
+    <div class="topbar-right">
+      <span class="topbar-date" id="hdr-date"></span>
+      <div class="status-pill"><div class="status-dot"></div>ออฟไลน์พร้อมใช้</div>
+    </div>
+  </header>
+
+  <div class="page-wrap">
+
+    <!-- ══ DASHBOARD ══ -->
+    <div class="page active" id="p-dashboard">
+      <div class="page-header">
+        <h2>Dashboard</h2>
+        <p>ภาพรวมระบบดูแลผู้ป่วยโรคไม่ติดต่อเรื้อรัง · รพ.สต.หนองค้อ อ.ศรีราชา จ.ชลบุรี</p>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;background:var(--white);border:1px solid var(--slate-100);border-radius:var(--r-lg);padding:12px 16px;margin-bottom:20px;box-shadow:var(--shadow-xs)">
+        <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--teal-400),var(--teal-600));display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;color:#fff;flex-shrink:0">ธ</div>
+        <div style="flex:1">
+          <div style="font-size:13px;font-weight:700;color:var(--ink-800)">ธัญชนก สุวรรณรงค์</div>
+          <div style="font-size:12px;color:var(--slate-300);margin-top:1px">พยาบาลวิชาชีพชำนาญการ · ผู้พัฒนานวัตกรรม NCD Care Hub</div>
+        </div>
+        <div style="text-align:right;font-size:11.5px;color:var(--slate-300);line-height:1.7">
+          <div>รพ.สต.หนองค้อ · อ.ศรีราชา · จ.ชลบุรี</div>
+          <div style="color:var(--teal-600);font-weight:600">NCD Care Hub v1.0</div>
+        </div>
+      </div>
+
+      <div class="kpi-grid">
+        <div class="kpi blue"><div class="kpi-label">ผู้ป่วยทั้งหมด</div><div class="kpi-value" id="d-total">0</div><div class="kpi-hint">ลงทะเบียนในระบบ</div></div>
+        <div class="kpi teal"><div class="kpi-label">คัดกรอง CKD แล้ว</div><div class="kpi-value" id="d-screened">0</div><div class="kpi-hint">มีผล eGFR ในระบบ</div></div>
+        <div class="kpi amber"><div class="kpi-label">ความเสี่ยงสูง+</div><div class="kpi-value" id="d-risk">0</div><div class="kpi-hint">ต้องติดตามเร่งด่วน</div></div>
+        <div class="kpi rose"><div class="kpi-label">นัดสัปดาห์นี้</div><div class="kpi-value" id="d-appt">0</div><div class="kpi-hint">7 วันข้างหน้า</div></div>
+      </div>
+
+      <div class="two-col">
+        <div>
+          <div class="card">
+            <div class="card-head"><div><div class="card-title">นัดหมายที่กำลังจะถึง</div><div class="card-sub">7 วันข้างหน้า</div></div><button class="btn btn-outline btn-sm" onclick="go('appt', qsel('appt'))">ดูทั้งหมด →</button></div>
+            <div id="d-appt-list"></div>
+          </div>
+          <div class="card mt-16">
+            <div class="card-head"><div class="card-title">อัตราการคัดกรอง</div></div>
+            <div class="row mt-4 mb-8"><span class="text-sm text-muted flex-1">คัดกรอง CKD</span><span class="text-sm font-mono" id="d-sr-pct" style="color:var(--teal-600);font-weight:700">0%</span></div>
+            <div class="prog-wrap"><div class="prog-bar prog-teal" id="d-sr-bar" style="width:0%"></div></div>
+            <div class="row mt-12 mb-8"><span class="text-sm text-muted flex-1">ส่งต่อ รพ.แม่ข่าย</span><span class="text-sm font-mono" id="d-rr-pct" style="color:var(--amber-600);font-weight:700">0%</span></div>
+            <div class="prog-wrap"><div class="prog-bar prog-amber" id="d-rr-bar" style="width:0%"></div></div>
+          </div>
+        </div>
+        <div>
+          <div class="card">
+            <div class="card-head"><div><div class="card-title">ผู้ป่วยเสี่ยงสูงมาก</div><div class="card-sub">G3b ขึ้นไป — ต้องติดตามด่วน</div></div></div>
+            <div id="d-highrisk-list"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ PATIENT LIST ══ -->
+    <div class="page" id="p-patient-list">
+      <div class="page-header"><h2>รายชื่อผู้ป่วย</h2><p>ผู้ป่วยที่ลงทะเบียนในระบบทั้งหมด</p></div>
+      <div class="card">
+        <div class="card-head">
+          <div class="search-wrap"><input class="form-input" id="pt-search" placeholder="ค้นหาชื่อ หรือ HN…" oninput="renderPtTable()" style="width:240px"></div>
+          <button class="btn btn-primary" onclick="go('add-patient', qsel('add-patient'))">+ เพิ่มผู้ป่วย</button>
+        </div>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead><tr><th>HN</th><th>ชื่อ-สกุล</th><th>อายุ / เพศ</th><th>โรค</th><th>eGFR / ระดับ</th><th>ความเสี่ยง</th><th>นัดถัดไป</th><th></th></tr></thead>
+            <tbody id="pt-tbody"></tbody>
+          </table>
+        </div>
+        <div id="pt-empty" style="display:none" class="empty"><div class="empty-icon">👥</div><div class="empty-title">ยังไม่มีผู้ป่วยในระบบ</div><div class="empty-sub">เริ่มต้นโดยเพิ่มผู้ป่วยรายแรก</div></div>
+      </div>
+    </div>
+
+    <!-- ══ ADD PATIENT ══ -->
+    <div class="page" id="p-add-patient">
+      <div class="page-header"><h2>เพิ่ม / แก้ไขผู้ป่วย</h2><p>กรอกข้อมูลให้ครบถ้วนเพื่อประสิทธิภาพสูงสุด</p></div>
+      <div class="card">
+        <div class="form-section-label">ข้อมูลส่วนตัว</div>
+        <div class="form-grid-2">
+          <div class="form-group"><label class="form-label">เลข HN <span class="form-required">*</span></label><input class="form-input" id="f-hn" placeholder="เช่น HN-0001"></div>
+          <div class="form-group"><label class="form-label">ชื่อ-นามสกุล <span class="form-required">*</span></label><input class="form-input" id="f-name" placeholder="ชื่อเต็ม"></div>
+        </div>
+        <div class="form-grid-3">
+          <div class="form-group"><label class="form-label">เพศ</label><select class="form-input form-select" id="f-sex"><option>ชาย</option><option>หญิง</option></select></div>
+          <div class="form-group"><label class="form-label">อายุ (ปี)</label><input class="form-input" id="f-age" type="number" min="0" max="120" placeholder="–"></div>
+          <div class="form-group"><label class="form-label">เบอร์โทร</label><input class="form-input" id="f-phone" placeholder="08x-xxx-xxxx"></div>
+        </div>
+
+        <div class="form-section-label mt-16">ข้อมูลสุขภาพ</div>
+        <div class="form-grid-2">
+          <div class="form-group"><label class="form-label">โรคประจำตัว</label><select class="form-input form-select" id="f-disease"><option>กลุ่มเสี่ยง HT (Pre-HT)</option><option>ความดันโลหิตสูง (HT)</option><option>เบาหวาน (DM)</option><option>เบาหวาน + ความดัน (DM+HT)</option><option>โรคไตเรื้อรัง (CKD)</option><option>อื่นๆ</option></select></div>
+          <div class="form-group"><label class="form-label">ยาที่ใช้หลัก</label><input class="form-input" id="f-med" placeholder="เช่น Amlodipine, Metformin"></div>
+        </div>
+        <div class="form-grid-3">
+          <div class="form-group"><label class="form-label">น้ำหนัก (กก.)</label><input class="form-input" id="f-wt" type="number" placeholder="–"></div>
+          <div class="form-group"><label class="form-label">ส่วนสูง (ซม.)</label><input class="form-input" id="f-ht" type="number" placeholder="–"></div>
+          <div class="form-group"><label class="form-label">รอบเอว (ซม.)</label><input class="form-input" id="f-waist" type="number" placeholder="–"></div>
+        </div>
+        <div class="form-grid-2">
+          <div class="form-group"><label class="form-label">ความดันล่าสุด (mmHg)</label><div style="display:flex;gap:8px"><input class="form-input" id="f-sbp" type="number" placeholder="Systolic (บน)"><input class="form-input" id="f-dbp" type="number" placeholder="Diastolic (ล่าง)"></div></div>
+          <div class="form-group"><label class="form-label">หมายเหตุ</label><input class="form-input" id="f-note" placeholder="ข้อมูลเพิ่มเติม"></div>
+        </div>
+
+        <div class="row mt-20">
+          <button class="btn btn-primary" onclick="savePt()">บันทึกข้อมูลผู้ป่วย</button>
+          <button class="btn btn-outline" onclick="clearPtForm()">ล้างฟอร์ม</button>
+          <button class="btn btn-ghost" onclick="go('patient-list', qsel('patient-list'))">ยกเลิก</button>
+        </div>
+        <input type="hidden" id="f-edit-id">
+      </div>
+    </div>
+
+    <!-- ══ CKD SCREENING ══ -->
+    <div class="page" id="p-ckd">
+      <div class="page-header"><h2>คัดกรองโรคไตเรื้อรัง (CKD)</h2><p>คำนวณ eGFR ด้วยสมการ CKD-EPI 2021 · จัดระดับตาม KDIGO 2024</p></div>
+      <div class="two-col-3-7">
+        <div>
+          <div class="card">
+            <div class="card-title mb-16">ข้อมูลการตรวจ</div>
+            <div class="form-group mb-12"><label class="form-label">ผู้ป่วย</label><select class="form-input form-select" id="ckd-pt"><option value="">— เลือกผู้ป่วย —</option></select></div>
+            <div class="form-grid-2">
+              <div class="form-group"><label class="form-label">อายุ (ปี)</label><input class="form-input" id="ckd-age" type="number" placeholder="–"></div>
+              <div class="form-group"><label class="form-label">เพศ</label><select class="form-input form-select" id="ckd-sex"><option value="1">ชาย</option><option value="0">หญิง</option></select></div>
+            </div>
+            <!-- ── ไต ── -->
+            <div class="form-section-label" style="margin-top:8px">ค่าการทำงานของไต</div>
+            <div class="form-grid-2">
+              <div class="form-group"><label class="form-label">Creatinine (mg/dL)</label><input class="form-input font-mono" id="ckd-cr" type="number" step="0.01" placeholder="ปกติ ♂0.67-1.17  ♀0.51-0.9"></div>
+              <div class="form-group"><label class="form-label">UACR — Urine Albumin/Creatinine (mg/g)</label><input class="form-input font-mono" id="ckd-uacr" type="number" step="0.1" placeholder="ปกติ &lt;30 mg/g"></div>
+            </div>
+            <div class="form-grid-2">
+              <div class="form-group"><label class="form-label">Urine Microalbumin (mg/L)</label><input class="form-input font-mono" id="ckd-microalb" type="number" step="0.1" placeholder="ปกติ &lt;20 mg/L"></div>
+              <div class="form-group"><label class="form-label">K (Potassium) (mmol/L)</label><input class="form-input font-mono" id="ckd-k" type="number" step="0.01" placeholder="ปกติ 3.4 – 4.5"></div>
+            </div>
+            <!-- ── น้ำตาล / HbA1c ── -->
+            <div class="form-section-label" style="margin-top:4px">น้ำตาลและเบาหวาน</div>
+            <div class="form-grid-2">
+              <div class="form-group"><label class="form-label">FBS / BS (mg/dL)</label><input class="form-input font-mono" id="ckd-fbs" type="number" placeholder="ปกติ 74 – 99"></div>
+              <div class="form-group"><label class="form-label">HbA1C (%)</label><input class="form-input font-mono" id="ckd-hba1c" type="number" step="0.1" placeholder="ปกติ 4.8 – 5.9"></div>
+            </div>
+            <!-- ── ตับ ── -->
+            <div class="form-section-label" style="margin-top:4px">การทำงานของตับ</div>
+            <div class="form-grid-2">
+              <div class="form-group"><label class="form-label">AST / SGOT (U/L)</label><input class="form-input font-mono" id="ckd-ast" type="number" placeholder="♂0-50  ♀0-35"></div>
+              <div class="form-group"><label class="form-label">ALT / SGPT (U/L)</label><input class="form-input font-mono" id="ckd-alt" type="number" placeholder="♂0-50  ♀0-35"></div>
+            </div>
+            <!-- ── ไขมัน ── -->
+            <div class="form-section-label" style="margin-top:4px">ไขมันในเลือด (Lipid Profile)</div>
+            <div class="form-grid-2">
+              <div class="form-group"><label class="form-label">Cholesterol (mg/dL)</label><input class="form-input font-mono" id="ckd-chol" type="number" placeholder="ปกติ &lt;200"></div>
+              <div class="form-group"><label class="form-label">Triglyceride (mg/dL)</label><input class="form-input font-mono" id="ckd-tg" type="number" placeholder="ปกติ &lt;150"></div>
+            </div>
+            <div class="form-grid-2">
+              <div class="form-group"><label class="form-label">HDL (mg/dL)</label><input class="form-input font-mono" id="ckd-hdl" type="number" placeholder="♂&gt;55  ♀&gt;65"></div>
+              <div class="form-group"><label class="form-label">LDL-C Direct (mg/dL)</label><input class="form-input font-mono" id="ckd-ldl" type="number" placeholder="ปกติ &lt;100"></div>
+            </div>
+            <div class="form-group mb-12"><label class="form-label">วันที่ตรวจ</label><input class="form-input" id="ckd-date" type="date"></div>
+            <button class="btn btn-primary" onclick="calcCKD()" style="width:100%">คำนวณ eGFR และจัดระดับ →</button>
+          </div>
+
+          <div class="card mt-16" id="ckd-result" style="display:none">
+            <div class="card-title mb-12">ผลการคำนวณ</div>
+            <div class="three-col" style="gap:8px">
+              <div style="background:var(--canvas);border-radius:var(--r);padding:12px;text-align:center"><div class="text-xs text-muted mb-4">eGFR</div><div class="val-big" id="r-egfr">—</div><div class="val-unit">mL/min/1.73m²</div></div>
+              <div style="background:var(--canvas);border-radius:var(--r);padding:12px;text-align:center"><div class="text-xs text-muted mb-4">ระดับ G</div><div class="val-big" id="r-g">—</div><div class="val-unit">GFR Stage</div></div>
+              <div style="background:var(--canvas);border-radius:var(--r);padding:12px;text-align:center"><div class="text-xs text-muted mb-4">ระดับ A</div><div class="val-big" id="r-a">—</div><div class="val-unit">Albuminuria</div></div>
+            </div>
+            <div class="mt-12" id="r-alert"></div>
+            <div class="mt-8 text-sm" id="r-advice" style="line-height:1.7;color:var(--ink-700)"></div>
+            <button class="btn btn-primary btn-sm mt-12" onclick="saveCKDRes()">บันทึกผลลงประวัติ</button>
+            <div id="lab-flags" class="mt-12"></div>
+          </div>
+        </div>
+
+        <div>
+          <div class="card mb-16">
+            <div class="card-title mb-4">แผนที่ความเสี่ยง CKD</div>
+            <div class="card-sub mb-12">KDIGO 2024 — CGA Classification · เซลล์ที่ไฮไลต์คือตำแหน่งของผู้ป่วยปัจจุบัน</div>
+            <div style="overflow-x:auto">
+              <table class="heatmap">
+                <thead>
+                  <tr><th style="text-align:left">GFR / Albuminuria</th><th>A1 &lt;30</th><th>A2 30–300</th><th>A3 &gt;300</th></tr>
+                </thead>
+                <tbody>
+                  <tr><td class="row-h">G1 ≥90</td><td class="hm-low" id="c-G1A1">ต่ำ</td><td class="hm-mod" id="c-G1A2">ปานกลาง</td><td class="hm-hi" id="c-G1A3">สูง</td></tr>
+                  <tr><td class="row-h">G2 60–89</td><td class="hm-low" id="c-G2A1">ต่ำ</td><td class="hm-mod" id="c-G2A2">ปานกลาง</td><td class="hm-hi" id="c-G2A3">สูง</td></tr>
+                  <tr><td class="row-h">G3a 45–59</td><td class="hm-mod" id="c-G3aA1">ปานกลาง</td><td class="hm-hi" id="c-G3aA2">สูง</td><td class="hm-vhi" id="c-G3aA3">สูงมาก</td></tr>
+                  <tr><td class="row-h">G3b 30–44</td><td class="hm-hi" id="c-G3bA1">สูง</td><td class="hm-vhi" id="c-G3bA2">สูงมาก</td><td class="hm-vhi" id="c-G3bA3">สูงมาก</td></tr>
+                  <tr><td class="row-h">G4 15–29</td><td class="hm-vhi" id="c-G4A1">สูงมาก</td><td class="hm-vhi" id="c-G4A2">สูงมาก</td><td class="hm-vhi" id="c-G4A3">สูงมาก</td></tr>
+                  <tr><td class="row-h">G5 &lt;15</td><td class="hm-vhi" id="c-G5A1">ไตวาย</td><td class="hm-vhi" id="c-G5A2">ไตวาย</td><td class="hm-vhi" id="c-G5A3">ไตวาย</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="row mt-12" style="gap:12px">
+              <span style="display:flex;align-items:center;gap:5px;font-size:11.5px;color:var(--slate-300)"><span style="width:12px;height:12px;background:#C6F6EE;border-radius:3px;display:inline-block"></span>ต่ำ</span>
+              <span style="display:flex;align-items:center;gap:5px;font-size:11.5px;color:var(--slate-300)"><span style="width:12px;height:12px;background:#FEF3C7;border-radius:3px;display:inline-block"></span>ปานกลาง</span>
+              <span style="display:flex;align-items:center;gap:5px;font-size:11.5px;color:var(--slate-300)"><span style="width:12px;height:12px;background:#FED7AA;border-radius:3px;display:inline-block"></span>สูง</span>
+              <span style="display:flex;align-items:center;gap:5px;font-size:11.5px;color:var(--slate-300)"><span style="width:12px;height:12px;background:#FEE2E2;border-radius:3px;display:inline-block"></span>สูงมาก</span>
+            </div>
+          </div>
+          <div class="card"><div class="card-title mb-12">ประวัติการคัดกรอง</div><div id="ckd-hist"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ SELF MONITOR ══ -->
+    <div class="page" id="p-monitor">
+      <div class="page-header"><h2>กำกับตนเอง (Self-Monitoring)</h2><p>บันทึกความดัน น้ำหนัก และพฤติกรรมสุขภาพประจำวัน</p></div>
+      <div class="alert alert-blue"><div class="alert-icon">ℹ️</div><div>โมดูลนี้ให้ผู้ป่วย/กลุ่มเสี่ยงกรอกข้อมูลด้วยตนเองทุกวัน เพื่อสร้างนิสัยการกำกับตนเองตามแนวคิดของ Bandura (1991)</div></div>
+      <div class="two-col">
+        <div>
+          <div class="card">
+            <div class="card-title mb-16">บันทึกประจำวัน</div>
+            <div class="form-grid-2">
+              <div class="form-group"><label class="form-label">ผู้ป่วย</label><select class="form-input form-select" id="sm-pt"><option value="">— เลือก —</option></select></div>
+              <div class="form-group"><label class="form-label">วันที่บันทึก</label><input class="form-input" id="sm-date" type="date"></div>
+            </div>
+            <div class="form-section-label mt-8">ค่าที่วัดได้</div>
+            <div class="form-grid-2">
+              <div class="form-group"><label class="form-label">SBP (mmHg)</label><input class="form-input font-mono" id="sm-sbp" type="number" placeholder="Systolic"></div>
+              <div class="form-group"><label class="form-label">DBP (mmHg)</label><input class="form-input font-mono" id="sm-dbp" type="number" placeholder="Diastolic"></div>
+            </div>
+            <div class="form-grid-2">
+              <div class="form-group"><label class="form-label">น้ำหนัก (กก.)</label><input class="form-input font-mono" id="sm-wt" type="number" placeholder="–"></div>
+              <div class="form-group"><label class="form-label">ชีพจร (bpm)</label><input class="form-input font-mono" id="sm-hr" type="number" placeholder="–"></div>
+            </div>
+
+            <div class="form-section-label mt-8">เช็คลิสต์พฤติกรรม</div>
+            <div id="bx-list">
+              <label style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--slate-50);cursor:pointer;font-size:13.5px"><input type="checkbox" id="bx1" style="width:16px;height:16px;accent-color:var(--teal-500);flex-shrink:0">รับประทานอาหารลดเค็ม (โซเดียม &lt;2g/วัน)</label>
+              <label style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--slate-50);cursor:pointer;font-size:13.5px"><input type="checkbox" id="bx2" style="width:16px;height:16px;accent-color:var(--teal-500);flex-shrink:0">รับประทานผัก-ผลไม้ ≥ 400g วันนี้</label>
+              <label style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--slate-50);cursor:pointer;font-size:13.5px"><input type="checkbox" id="bx3" style="width:16px;height:16px;accent-color:var(--teal-500);flex-shrink:0">ออกกำลังกายอย่างน้อย 30 นาที</label>
+              <label style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--slate-50);cursor:pointer;font-size:13.5px"><input type="checkbox" id="bx4" style="width:16px;height:16px;accent-color:var(--teal-500);flex-shrink:0">รับประทานยาครบตามที่แพทย์สั่ง</label>
+              <label style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--slate-50);cursor:pointer;font-size:13.5px"><input type="checkbox" id="bx5" style="width:16px;height:16px;accent-color:var(--teal-500);flex-shrink:0">ไม่สูบบุหรี่ / หลีกเลี่ยงควันบุหรี่</label>
+              <label style="display:flex;align-items:center;gap:10px;padding:8px 0;cursor:pointer;font-size:13.5px"><input type="checkbox" id="bx6" style="width:16px;height:16px;accent-color:var(--teal-500);flex-shrink:0">ฝึกผ่อนคลาย/สมาธิ อย่างน้อย 10 นาที</label>
+            </div>
+            <div class="form-group mt-12"><label class="form-label">หมายเหตุ / อาการที่สังเกต</label><textarea class="form-input form-textarea" id="sm-note" placeholder="เช่น ปวดหัว เวียนหัว หรือไม่มีอาการผิดปกติ"></textarea></div>
+            <button class="btn btn-primary mt-8" onclick="saveSM()" style="width:100%">บันทึกข้อมูลวันนี้</button>
+          </div>
+        </div>
+        <div>
+          <div class="card mb-16">
+            <div class="card-title mb-4">กราฟแนวโน้ม SBP (7 วันล่าสุด)</div>
+            <div class="card-sub mb-12">ความดัน Systolic — เป้าหมาย &lt;130 mmHg</div>
+            <div style="position:relative;height:122px">
+              <div class="bar-chart" id="bp-chart"></div>
+            </div>
+            <div class="row mt-8" style="gap:14px">
+              <span style="display:flex;align-items:center;gap:5px;font-size:11.5px;color:var(--slate-300)"><span style="width:10px;height:10px;background:var(--teal-100);border-radius:2px;display:inline-block"></span>ปกติ (&lt;120)</span>
+              <span style="display:flex;align-items:center;gap:5px;font-size:11.5px;color:var(--slate-300)"><span style="width:10px;height:10px;background:var(--amber-100);border-radius:2px;display:inline-block"></span>เสี่ยง (120–139)</span>
+              <span style="display:flex;align-items:center;gap:5px;font-size:11.5px;color:var(--slate-300)"><span style="width:10px;height:10px;background:var(--rose-100);border-radius:2px;display:inline-block"></span>สูง (≥140)</span>
+            </div>
+          </div>
+          <div class="card mb-16"><div class="card-title mb-12">ประวัติล่าสุด</div><div id="sm-hist"></div></div>
+          <div class="card" style="background:var(--ink-900);border-color:var(--ink-700)">
+            <div style="font-size:13px;font-weight:700;color:var(--white);margin-bottom:12px">เป้าหมายสุขภาพ</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+              <div style="background:rgba(255,255,255,.06);border-radius:var(--r);padding:10px 12px"><div style="font-size:10px;color:var(--slate-300);letter-spacing:.5px;text-transform:uppercase;margin-bottom:4px">ความดัน</div><div style="font-size:14px;font-weight:700;color:var(--teal-400);">&lt;130/80</div><div style="font-size:10.5px;color:var(--slate-300)">mmHg</div></div>
+              <div style="background:rgba(255,255,255,.06);border-radius:var(--r);padding:10px 12px"><div style="font-size:10px;color:var(--slate-300);letter-spacing:.5px;text-transform:uppercase;margin-bottom:4px">BMI</div><div style="font-size:14px;font-weight:700;color:var(--teal-400);">18.5–24.9</div><div style="font-size:10.5px;color:var(--slate-300)">kg/m²</div></div>
+              <div style="background:rgba(255,255,255,.06);border-radius:var(--r);padding:10px 12px"><div style="font-size:10px;color:var(--slate-300);letter-spacing:.5px;text-transform:uppercase;margin-bottom:4px">ออกกำลังกาย</div><div style="font-size:14px;font-weight:700;color:var(--teal-400);">≥150</div><div style="font-size:10.5px;color:var(--slate-300)">นาที/สัปดาห์</div></div>
+              <div style="background:rgba(255,255,255,.06);border-radius:var(--r);padding:10px 12px"><div style="font-size:10px;color:var(--slate-300);letter-spacing:.5px;text-transform:uppercase;margin-bottom:4px">โซเดียม</div><div style="font-size:14px;font-weight:700;color:var(--teal-400);">&lt;2,000</div><div style="font-size:10.5px;color:var(--slate-300)">มก./วัน</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ APPOINTMENTS ══ -->
+    <div class="page" id="p-appt">
+      <div class="page-header"><h2>จัดการนัดหมาย</h2><p>บันทึกและติดตามนัดหมายผู้ป่วยทั้งหมด</p></div>
+      <div class="two-col-3-7">
+        <div class="card">
+          <div class="card-title mb-16">เพิ่มนัดหมาย</div>
+          <div class="form-group mb-12"><label class="form-label">ผู้ป่วย</label><select class="form-input form-select" id="ap-pt"><option value="">— เลือกผู้ป่วย —</option></select></div>
+          <div class="form-grid-2">
+            <div class="form-group"><label class="form-label">วันที่นัด</label><input class="form-input" id="ap-date" type="date"></div>
+            <div class="form-group"><label class="form-label">เวลา</label><input class="form-input" id="ap-time" type="time" value="09:00"></div>
+          </div>
+          <div class="form-group mb-12"><label class="form-label">ประเภทการนัด</label>
+            <select class="form-input form-select" id="ap-type"><option>ติดตามโรคเรื้อรัง (รายเดือน)</option><option>คัดกรอง CKD (รายปี)</option><option>ติดตามกลุ่มเสี่ยง HT</option><option>รับยา</option><option>เยี่ยมบ้าน</option><option>ส่งต่อ รพ.แม่ข่าย</option><option>อื่นๆ</option></select>
+          </div>
+          <div class="form-group mb-16"><label class="form-label">หมายเหตุ</label><textarea class="form-input form-textarea" id="ap-note" rows="2" placeholder="รายละเอียดเพิ่มเติม" style="min-height:60px"></textarea></div>
+          <button class="btn btn-primary" onclick="saveAppt()" style="width:100%">บันทึกนัดหมาย</button>
+        </div>
+        <div class="card">
+          <div class="card-head"><div class="card-title">รายการนัดหมาย</div>
+            <select class="form-input form-select" id="ap-filter" onchange="renderAppt()" style="width:160px;height:32px;font-size:12.5px">
+              <option value="upcoming">กำลังจะถึง</option><option value="all">ทั้งหมด</option><option value="today">วันนี้</option>
+            </select>
+          </div>
+          <div id="appt-list"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ REPORTS ══ -->
+    <div class="page" id="p-reports">
+      <div class="page-header"><h2>รายงานสรุป</h2><p>ข้อมูลสำหรับรายงานสำนักงานสาธารณสุขจังหวัด · รพ.สต.หนองค้อ อ.ศรีราชา จ.ชลบุรี</p></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;background:var(--ink-900);border-radius:var(--r-lg);padding:14px 18px;margin-bottom:20px;gap:12px">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--teal-400),var(--teal-600));display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#fff;flex-shrink:0">ธ</div>
+          <div>
+            <div style="font-size:13px;font-weight:700;color:var(--white)">ธัญชนก สุวรรณรงค์</div>
+            <div style="font-size:11.5px;color:var(--slate-300)">พยาบาลวิชาชีพชำนาญการ · รพ.สต.หนองค้อ อ.ศรีราชา จ.ชลบุรี</div>
+          </div>
+        </div>
+        <div style="font-size:11px;color:var(--slate-300);text-align:right;line-height:1.7">ผู้พัฒนานวัตกรรม<br><span style="color:var(--teal-400);font-weight:600">NCD Care Hub v1.0</span></div>
+      </div>
+      <div class="kpi-grid">
+        <div class="kpi blue"><div class="kpi-label">ผู้ป่วยทั้งหมด</div><div class="kpi-value" id="rp-tot">0</div></div>
+        <div class="kpi teal"><div class="kpi-label">คัดกรอง CKD</div><div class="kpi-value" id="rp-scr">0</div></div>
+        <div class="kpi amber"><div class="kpi-label">เสี่ยงสูง (G3+)</div><div class="kpi-value" id="rp-hi">0</div></div>
+        <div class="kpi rose"><div class="kpi-label">ส่งต่อแล้ว</div><div class="kpi-value" id="rp-ref">0</div></div>
+      </div>
+      <div class="two-col mb-16">
+        <div class="card"><div class="card-title mb-14">การกระจายระดับ CKD</div><div id="rp-ckd-dist"></div></div>
+        <div class="card"><div class="card-title mb-14">กลุ่มโรคประจำตัว</div><div id="rp-dis-dist"></div></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><div class="card-title">ตารางสรุปผู้ป่วยทั้งหมด</div>
+          <div class="row"><button class="btn btn-outline btn-sm" onclick="doExport()">↓ Export CSV</button><button class="btn btn-ghost btn-sm" onclick="window.print()">⎙ พิมพ์</button></div>
+        </div>
+        <div class="table-wrap">
+          <table class="data-table"><thead><tr><th>HN</th><th>ชื่อ-สกุล</th><th>อายุ</th><th>โรค</th><th>eGFR</th><th>G/A</th><th>ความเสี่ยง</th><th>FBS</th><th>HbA1C</th><th>Microalb</th><th>LDL</th><th>ส่งต่อ</th></tr></thead><tbody id="rp-table"></tbody></table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ REFER ══ -->
+    <div class="page" id="p-refer">
+      <div class="page-header"><h2>ส่งต่อผู้ป่วย</h2><p>บันทึกการส่งต่อไปยังโรงพยาบาลแม่ข่าย ตามระดับความเสี่ยง</p></div>
+      <div class="two-col">
+        <div class="card">
+          <div class="card-title mb-16">บันทึกการส่งต่อ</div>
+          <div class="form-group mb-12"><label class="form-label">ผู้ป่วย</label><select class="form-input form-select" id="rf-pt"><option value="">— เลือกผู้ป่วย —</option></select></div>
+          <div class="form-group mb-12"><label class="form-label">ส่งต่อไปที่</label><select class="form-input form-select" id="rf-to"><option>โรงพยาบาลแม่ข่าย (อายุรกรรม)</option><option>คลินิกโรคไตเฉพาะทาง</option><option>คลินิกความดันโลหิตสูง</option><option>แผนกฉุกเฉิน</option><option>อื่นๆ</option></select></div>
+          <div class="form-grid-2">
+            <div class="form-group"><label class="form-label">วันที่ส่งต่อ</label><input class="form-input" id="rf-date" type="date"></div>
+            <div class="form-group"><label class="form-label">ระดับความเร่งด่วน</label><select class="form-input form-select" id="rf-urg"><option value="routine">ปกติ (Routine)</option><option value="urgent">เร่งด่วน (Urgent)</option><option value="emergency">ฉุกเฉิน (Emergency)</option></select></div>
+          </div>
+          <div class="form-group mb-16"><label class="form-label">สาเหตุการส่งต่อ</label><textarea class="form-input form-textarea" id="rf-reason" placeholder="เช่น eGFR &lt;30, UACR &gt;300, ควบคุม BP ไม่ได้..."></textarea></div>
+          <button class="btn btn-primary" onclick="saveRef()" style="width:100%">บันทึกการส่งต่อ</button>
+        </div>
+        <div>
+          <div class="card mb-16" style="background:var(--ink-800);border-color:var(--ink-600)">
+            <div style="font-size:13px;font-weight:700;color:var(--white);margin-bottom:14px">เกณฑ์การส่งต่อ KDIGO 2024</div>
+            <div style="display:flex;flex-direction:column;gap:10px">
+              <div style="display:flex;gap:10px;align-items:flex-start"><div style="width:3px;background:var(--rose-400);border-radius:2px;flex-shrink:0;align-self:stretch"></div><div><div style="font-size:12px;font-weight:700;color:var(--rose-400);margin-bottom:2px">ฉุกเฉิน</div><div style="font-size:12.5px;color:var(--slate-200)">eGFR &lt;15, K⁺ &gt;6.5 mEq/L, อาการ uremia</div></div></div>
+              <div style="display:flex;gap:10px;align-items:flex-start"><div style="width:3px;background:var(--amber-400);border-radius:2px;flex-shrink:0;align-self:stretch"></div><div><div style="font-size:12px;font-weight:700;color:var(--amber-400);margin-bottom:2px">เร่งด่วน</div><div style="font-size:12.5px;color:var(--slate-200)">eGFR 15–30 หรือ UACR &gt;300 mg/g</div></div></div>
+              <div style="display:flex;gap:10px;align-items:flex-start"><div style="width:3px;background:var(--teal-400);border-radius:2px;flex-shrink:0;align-self:stretch"></div><div><div style="font-size:12px;font-weight:700;color:var(--teal-400);margin-bottom:2px">ปกติ</div><div style="font-size:12.5px;color:var(--slate-200)">eGFR 30–44 (G3b) ประเมินซ้ำ 3–6 เดือน</div></div></div>
+              <div style="display:flex;gap:10px;align-items:flex-start"><div style="width:3px;background:var(--slate-300);border-radius:2px;flex-shrink:0;align-self:stretch"></div><div><div style="font-size:12px;font-weight:700;color:var(--slate-200);margin-bottom:2px">ติดตาม รพ.สต.</div><div style="font-size:12.5px;color:var(--slate-200)">G1–G3a ความเสี่ยงต่ำ-ปานกลาง</div></div></div>
+            </div>
+          </div>
+          <div class="card"><div class="card-title mb-12">ประวัติการส่งต่อ</div><div id="ref-hist"></div></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-bg" id="confirm-modal">
+  <div class="modal-box">
+    <div class="modal-head"><h3 id="cm-title">ยืนยัน</h3><button class="modal-close" onclick="closeModal()">✕</button></div>
+    <p id="cm-msg" style="font-size:13.5px;color:var(--slate-300);margin-bottom:20px;line-height:1.6"></p>
+    <div class="row"><button class="btn btn-danger" id="cm-ok">ยืนยัน</button><button class="btn btn-ghost" onclick="closeModal()">ยกเลิก</button></div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"><span class="toast-icon" id="toast-icon"></span><span id="toast-msg"></span></div>
+
+<script>
+
+// ── HELPER ────────────────────────────────────────────
+function qsel(page){return document.querySelector('.sb-item[onclick*="'+page+'"]');}
+
+// ── DATA ──────────────────────────────────────────────
+const DB={
+  get:k=>JSON.parse(localStorage.getItem('ncd2_'+k)||'[]'),
+  set:(k,v)=>localStorage.setItem('ncd2_'+k,JSON.stringify(v)),
+  nid:k=>{const d=DB.get(k);return d.length?Math.max(...d.map(x=>x.id||0))+1:1}
+};
+
+// ── INIT ──────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded',()=>{
+  const now=new Date();
+  document.getElementById('hdr-date').textContent=now.toLocaleDateString('th-TH',{year:'numeric',month:'long',day:'numeric'});
+  ['ckd-date','sm-date','rf-date'].forEach(id=>{const el=document.getElementById(id);if(el)el.valueAsDate=now;});
+  document.getElementById('ap-date').valueAsDate=new Date(now.getTime()+7*864e5);
+  refreshAll();
+});
+
+function refreshAll(){updateDash();renderPtTable();popDrops();renderAppt();renderCKDHist();renderSMHist();renderBPChart();renderRefHist();renderReports();}
+
+// ── NAVIGATION ────────────────────────────────────────
+const titles={dashboard:'Dashboard',  'patient-list':'รายชื่อผู้ป่วย','add-patient':'เพิ่มผู้ป่วย',ckd:'คัดกรอง CKD',monitor:'กำกับตนเอง',appt:'นัดหมาย',reports:'รายงาน',refer:'ส่งต่อผู้ป่วย'};
+function go(id,btn){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.sb-item').forEach(b=>b.classList.remove('active'));
+  document.getElementById('p-'+id).classList.add('active');
+  if(btn)btn.classList.add('active');
+  document.getElementById('pg-title').textContent=titles[id]||id;
+  if(id==='patient-list')renderPtTable();
+  if(id==='dashboard')updateDash();
+  if(id==='reports')renderReports();
+  if(id==='appt'){popDrops();renderAppt();}
+  if(id==='ckd'){popDrops();renderCKDHist();}
+  if(id==='monitor'){popDrops();renderSMHist();renderBPChart();}
+  if(id==='refer'){popDrops();renderRefHist();}
+  if(id==='add-patient')clearPtForm();
+  if(window.innerWidth<=900)document.getElementById('sidebar').classList.remove('open');
+}
+
+// ── TOAST ─────────────────────────────────────────────
+function toast(msg,type='success'){
+  const t=document.getElementById('toast');
+  const icons={success:'✓',error:'✕'};
+  document.getElementById('toast-icon').textContent=icons[type]||'✓';
+  document.getElementById('toast-msg').textContent=msg;
+  t.className='toast toast-'+type+' show';
+  setTimeout(()=>t.classList.remove('show'),3000);
+}
+function closeModal(){document.getElementById('confirm-modal').classList.remove('open');}
+function confirm2(title,msg,ok){
+  document.getElementById('cm-title').textContent=title;
+  document.getElementById('cm-msg').textContent=msg;
+  document.getElementById('cm-ok').onclick=()=>{ok();closeModal();};
+  document.getElementById('confirm-modal').classList.add('open');
+}
+
+// ── DROPDOWNS ─────────────────────────────────────────
+function popDrops(){
+  const pts=DB.get('patients');
+  ['ckd-pt','sm-pt','ap-pt','rf-pt'].forEach(id=>{
+    const el=document.getElementById(id);if(!el)return;
+    const v=el.value;
+    el.innerHTML='<option value="">— เลือกผู้ป่วย —</option>';
+    pts.forEach(p=>el.insertAdjacentHTML('beforeend',`<option value="${p.id}">${p.name} (${p.hn})</option>`));
+    el.value=v;
+  });
+}
+
+// ── RISK CHIP ─────────────────────────────────────────
+function riskChip(risk){
+  const map={ต่ำ:'chip-teal',ปานกลาง:'chip-amber',สูง:'chip-rose',สูงมาก:'chip-rose',ไตวาย:'chip-rose'};
+  return risk?`<span class="chip ${map[risk]||'chip-gray'}">${risk}</span>`:`<span class="chip chip-gray">ยังไม่คัดกรอง</span>`;
+}
+
+// ── PATIENTS ──────────────────────────────────────────
+function savePt(){
+  const hn=document.getElementById('f-hn').value.trim();
+  const name=document.getElementById('f-name').value.trim();
+  if(!hn||!name)return toast('กรุณากรอก HN และชื่อ-สกุล','error');
+  const pts=DB.get('patients');
+  const eid=parseInt(document.getElementById('f-edit-id').value)||0;
+  if(!eid&&pts.find(p=>p.hn===hn))return toast('HN นี้มีอยู่ในระบบแล้ว','error');
+  const pt={id:eid||DB.nid('patients'),hn,name,
+    sex:document.getElementById('f-sex').value,age:document.getElementById('f-age').value,
+    phone:document.getElementById('f-phone').value,disease:document.getElementById('f-disease').value,
+    med:document.getElementById('f-med').value,wt:document.getElementById('f-wt').value,
+    ht:document.getElementById('f-ht').value,waist:document.getElementById('f-waist').value,
+    sbp:document.getElementById('f-sbp').value,dbp:document.getElementById('f-dbp').value,
+    note:document.getElementById('f-note').value,
+    ckdResult:eid?(pts.find(p=>p.id===eid)||{}).ckdResult:null,
+    referred:eid?(pts.find(p=>p.id===eid)||{}).referred:false,
+    createdAt:eid?(pts.find(p=>p.id===eid)||{}).createdAt:new Date().toISOString()
+  };
+  if(eid){const i=pts.findIndex(p=>p.id===eid);pts[i]=pt;}else pts.push(pt);
+  DB.set('patients',pts);
+  toast(eid?'แก้ไขข้อมูลสำเร็จ':'เพิ่มผู้ป่วยสำเร็จ');
+  clearPtForm();
+  go('patient-list', qsel('patient-list'));
+}
+function clearPtForm(){
+  ['f-hn','f-name','f-age','f-phone','f-med','f-wt','f-ht','f-waist','f-sbp','f-dbp','f-note','f-edit-id'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  document.getElementById('f-sex').value='ชาย';
+  document.getElementById('f-disease').value='กลุ่มเสี่ยง HT (Pre-HT)';
+}
+function editPt(id){
+  const p=DB.get('patients').find(x=>x.id===id);if(!p)return;
+  const flds={hn:p.hn,name:p.name,age:p.age||'',phone:p.phone||'',med:p.med||'','wt':p.wt||'','ht':p.ht||'',waist:p.waist||'',sbp:p.sbp||'',dbp:p.dbp||'',note:p.note||''};
+  Object.entries(flds).forEach(([k,v])=>{const el=document.getElementById('f-'+k);if(el)el.value=v;});
+  document.getElementById('f-sex').value=p.sex||'ชาย';
+  document.getElementById('f-disease').value=p.disease||'กลุ่มเสี่ยง HT (Pre-HT)';
+  document.getElementById('f-edit-id').value=p.id;
+  go('add-patient', qsel('add-patient'));
+}
+function delPt(id){
+  confirm2('ลบผู้ป่วย','ยืนยันการลบผู้ป่วยออกจากระบบ? การดำเนินการนี้ไม่สามารถกู้คืนได้',()=>{
+    DB.set('patients',DB.get('patients').filter(p=>p.id!==id));
+    toast('ลบผู้ป่วยเรียบร้อย');renderPtTable();updateDash();
+  });
+}
+function renderPtTable(){
+  const q=(document.getElementById('pt-search')||{value:''}).value.toLowerCase();
+  const pts=DB.get('patients').filter(p=>!q||p.name.toLowerCase().includes(q)||p.hn.toLowerCase().includes(q));
+  const appts=DB.get('appointments');
+  const now=new Date();now.setHours(0,0,0,0);
+  const tbody=document.getElementById('pt-tbody');
+  const empty=document.getElementById('pt-empty');
+  if(!pts.length){tbody.innerHTML='';empty.style.display='flex';return;}
+  empty.style.display='none';
+  tbody.innerHTML=pts.map(p=>{
+    const r=p.ckdResult;
+    const next=appts.filter(a=>a.patientId===p.id&&new Date(a.date)>=now).sort((a,b)=>new Date(a.date)-new Date(b.date))[0];
+    return `<tr>
+      <td><span class="tag tag-blue">${p.hn}</span></td>
+      <td><div style="font-weight:600;font-size:13.5px">${p.name}</div>${p.phone?`<div class="text-xs text-muted font-mono">${p.phone}</div>`:''}</td>
+      <td><span class="text-sm">${p.age||'—'} ปี / ${p.sex||'—'}</span></td>
+      <td style="font-size:12.5px;max-width:140px">${p.disease||'—'}</td>
+      <td>${r?`<span class="font-mono text-sm" style="font-weight:700;color:var(--teal-600)">${r.eGFR}</span><div class="text-xs text-muted">${r.gStage} / ${r.aStage}</div>`:'<span class="text-muted text-xs">ยังไม่ตรวจ</span>'}</td>
+      <td>${riskChip(r?.risk)}</td>
+      <td><span class="text-sm font-mono">${next?next.date:'—'}</span></td>
+      <td><div class="row" style="gap:4px"><button class="btn btn-ghost btn-icon btn-sm" onclick="editPt(${p.id})" title="แก้ไข">✎</button><button class="btn btn-danger btn-icon btn-sm" onclick="delPt(${p.id})" title="ลบ">✕</button></div></td>
+    </tr>`;
+  }).join('');
+}
+
+// ── CKD ───────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded',()=>{
+  document.getElementById('ckd-pt').addEventListener('change',function(){
+    const p=DB.get('patients').find(x=>x.id===parseInt(this.value));
+    if(p){if(p.age)document.getElementById('ckd-age').value=p.age;if(p.sex)document.getElementById('ckd-sex').value=p.sex==='ชาย'?'1':'0';}
+  });
+  document.getElementById('sm-pt').addEventListener('change',()=>{renderSMHist();renderBPChart();});
+});
+function calcCKD(){
+  const age=parseFloat(document.getElementById('ckd-age').value);
+  const sex=parseFloat(document.getElementById('ckd-sex').value);
+  const cr=parseFloat(document.getElementById('ckd-cr').value);
+  const uacr=parseFloat(document.getElementById('ckd-uacr').value);
+  const microalb=parseFloat(document.getElementById('ckd-microalb').value);
+  const k=parseFloat(document.getElementById('ckd-k').value);
+  const fbs=parseFloat(document.getElementById('ckd-fbs').value);
+  const hba1c=parseFloat(document.getElementById('ckd-hba1c').value);
+  const ast=parseFloat(document.getElementById('ckd-ast').value);
+  const alt=parseFloat(document.getElementById('ckd-alt').value);
+  const chol=parseFloat(document.getElementById('ckd-chol').value);
+  const tg=parseFloat(document.getElementById('ckd-tg').value);
+  const hdl=parseFloat(document.getElementById('ckd-hdl').value);
+  const ldl=parseFloat(document.getElementById('ckd-ldl').value);
+  if(!age||!cr)return toast('กรุณากรอกอายุและค่า Creatinine','error');
+  const kk=sex===1?0.9:0.7,a=sex===1?-0.302:-0.241,sf=sex===1?1.0:1.012;
+  const ck=cr/kk;
+  const eGFR=+(142*Math.pow(Math.min(ck,1),a)*Math.pow(Math.max(ck,1),-1.2)*Math.pow(0.9938,age)*sf).toFixed(1);
+  let g=eGFR>=90?'G1':eGFR>=60?'G2':eGFR>=45?'G3a':eGFR>=30?'G3b':eGFR>=15?'G4':'G5';
+  // ใช้ค่า Microalbumin ช่วยแปล A stage ถ้าไม่มี UACR
+  let aUse=uacr;
+  if(isNaN(uacr)&&!isNaN(microalb)){
+    // Microalbumin mg/L → UACR mg/g โดยประมาณ (× creatinine urine ≈ 1 g/L assumed)
+    aUse=microalb; // เทียบเป็น UACR โดยตรง (range เดียวกัน: <30, 30-300, >300)
+  }
+  let av=isNaN(aUse)?'A1':aUse>=300?'A3':aUse>=30?'A2':'A1';
+  const rm={G1:{A1:'ต่ำ',A2:'ปานกลาง',A3:'สูง'},G2:{A1:'ต่ำ',A2:'ปานกลาง',A3:'สูง'},G3a:{A1:'ปานกลาง',A2:'สูง',A3:'สูงมาก'},G3b:{A1:'สูง',A2:'สูงมาก',A3:'สูงมาก'},G4:{A1:'สูงมาก',A2:'สูงมาก',A3:'สูงมาก'},G5:{A1:'ไตวาย',A2:'ไตวาย',A3:'ไตวาย'}};
+  const risk=rm[g][av];
+  document.querySelectorAll('.heatmap td[id^="c-"]').forEach(c=>c.classList.remove('hm-active'));
+  const cell=document.getElementById(`c-${g}${av}`);if(cell)cell.classList.add('hm-active');
+  document.getElementById('r-egfr').textContent=eGFR;
+  document.getElementById('r-g').textContent=g;
+  document.getElementById('r-a').textContent=av;
+  const aw={ต่ำ:'ติดตามปีละ 1 ครั้ง ส่งเสริมพฤติกรรมสุขภาพ ควบคุม BP และน้ำตาล',ปานกลาง:'ติดตามทุก 6 เดือน ปรับพฤติกรรม ควบคุม BP &lt;130/80 mmHg ลดโปรตีนสัตว์',สูง:'ติดตามทุก 3 เดือน ปรึกษาแพทย์ ระวังยา nephrotoxic',สูงมาก:'ควรส่งต่อผู้เชี่ยวชาญโรคไต ติดตามทุก 1–3 เดือน เตรียมพร้อม RRT',ไตวาย:'ส่งต่อฉุกเฉิน เตรียมบำบัดทดแทนไต ห้ามใช้ยา nephrotoxic'};
+  const ac={ต่ำ:'alert-teal',ปานกลาง:'alert-amber',สูง:'alert-amber',สูงมาก:'alert-rose',ไตวาย:'alert-rose'};
+  document.getElementById('r-alert').innerHTML=`<div class="alert ${ac[risk]||'alert-blue'}"><div class="alert-icon">${risk==='ไตวาย'?'🔴':risk==='สูงมาก'?'⚠️':'ℹ️'}</div><div><strong>ระดับความเสี่ยง: ${risk}</strong></div></div>`;
+  document.getElementById('r-advice').innerHTML=`<strong>แนวทาง:</strong> ${aw[risk]||''}`;
+
+  // ── Lab Flags ────────────────────────────────────────
+  const isFem=sex===0;
+  const flags=[];
+  const flag=(label,val,low,high,unit)=>{
+    if(isNaN(val))return;
+    if(val<low)flags.push({label,val,unit,status:'low',ref:`${low}–${high}`});
+    else if(val>high)flags.push({label,val,unit,status:'high',ref:`${low}–${high}`});
+    else flags.push({label,val,unit,status:'normal',ref:`${low}–${high}`});
+  };
+  if(!isNaN(microalb)){
+    const mStatus=microalb<20?'normal':microalb<200?'high':'high';
+    flags.push({label:'Urine Microalbumin',val:microalb,unit:'mg/L',status:mStatus,ref:'<20'});
+  }
+  if(!isNaN(uacr)){
+    const uStatus=uacr<30?'normal':uacr<300?'high':'high';
+    flags.push({label:'UACR',val:uacr,unit:'mg/g',status:uStatus,ref:'<30'});
+  }
+  flag('Creatinine',cr,isFem?0.51:0.67,isFem?0.9:1.17,'mg/dL');
+  flag('K (Potassium)',k,3.4,4.5,'mmol/L');
+  flag('FBS',fbs,74,99,'mg/dL');
+  if(!isNaN(hba1c)){const hs=hba1c<=5.9?'normal':hba1c<=6.4?'high':'high';flags.push({label:'HbA1C',val:hba1c,unit:'%',status:hs,ref:'4.8–5.9'});}
+  flag('AST/SGOT',ast,0,isFem?35:50,'U/L');
+  flag('ALT/SGPT',alt,0,isFem?35:50,'U/L');
+  flag('Cholesterol',chol,0,200,'mg/dL');
+  flag('Triglyceride',tg,0,150,'mg/dL');
+  flag('HDL',hdl,isFem?65:55,999,'mg/dL');
+  flag('LDL-C',ldl,0,100,'mg/dL');
+
+  const fc={normal:'color:var(--teal-600)',high:'color:var(--rose-600)',low:'color:var(--amber-600)'};
+  const fi={normal:'✓',high:'↑',low:'↓'};
+  const labHtml=flags.length?`
+    <div style="font-size:12px;font-weight:700;color:var(--slate-300);letter-spacing:.8px;text-transform:uppercase;margin-bottom:8px">ผลแล็บทั้งหมด</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px">
+    ${flags.map(f=>`
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 8px;background:var(--canvas);border-radius:var(--r);border-left:3px solid ${f.status==='normal'?'var(--teal-400)':f.status==='high'?'var(--rose-400)':'var(--amber-400)'}">
+        <span style="font-size:12px;color:var(--text2)">${f.label}</span>
+        <span style="font-size:13px;font-weight:700;font-family:var(--mono);${fc[f.status]}">${fi[f.status]} ${f.val} <span style="font-size:10px;font-weight:400">${f.unit}</span></span>
+      </div>`).join('')}
+    </div>`:'' ;
+  document.getElementById('lab-flags').innerHTML=labHtml;
+
+  const res={eGFR,gStage:g,aStage:av,risk,
+    uacr:isNaN(uacr)?null:uacr,
+    microalb:isNaN(microalb)?null:microalb,
+    k:isNaN(k)?null:k,
+    fbs:isNaN(fbs)?null:fbs,
+    hba1c:isNaN(hba1c)?null:hba1c,
+    ast:isNaN(ast)?null:ast,
+    alt:isNaN(alt)?null:alt,
+    chol:isNaN(chol)?null:chol,
+    tg:isNaN(tg)?null:tg,
+    hdl:isNaN(hdl)?null:hdl,
+    ldl:isNaN(ldl)?null:ldl,
+    date:document.getElementById('ckd-date').value};
+  document.getElementById('ckd-result').dataset.res=JSON.stringify(res);
+  document.getElementById('ckd-result').style.display='block';
+}
+function saveCKDRes(){
+  const pid=parseInt(document.getElementById('ckd-pt').value);
+  const rd=document.getElementById('ckd-result').dataset.res;
+  if(!pid||!rd)return toast('เลือกผู้ป่วยและคำนวณก่อน','error');
+  const res=JSON.parse(rd);
+  const pts=DB.get('patients');const i=pts.findIndex(p=>p.id===pid);if(i<0)return;
+  pts[i].ckdResult=res;DB.set('patients',pts);
+  const hist=DB.get('ckd-hist');hist.push({id:DB.nid('ckd-hist'),patientId:pid,...res,at:new Date().toISOString()});DB.set('ckd-hist',hist);
+  toast('บันทึกผล CKD ลงประวัติแล้ว');renderCKDHist();updateDash();
+}
+function renderCKDHist(){
+  const hist=DB.get('ckd-hist').slice(-8).reverse();
+  const pts=DB.get('patients');
+  const el=document.getElementById('ckd-hist');if(!el)return;
+  if(!hist.length){el.innerHTML='<div class="empty" style="padding:24px"><div class="empty-icon">🔬</div><div class="empty-sub">ยังไม่มีประวัติ</div></div>';return;}
+  el.innerHTML=hist.map(h=>{
+    const p=pts.find(x=>x.id===h.patientId)||{name:'ไม่ทราบ'};
+    return `<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--slate-50)">
+      <div><div style="font-weight:600;font-size:13.5px">${p.name}</div><div class="text-xs text-muted font-mono">${h.date||h.at?.slice(0,10)}</div></div>
+      <div style="text-align:right"><div class="font-mono text-sm" style="font-weight:700;color:var(--teal-600)">${h.gStage}/${h.aStage} · ${h.eGFR}</div>${riskChip(h.risk)}</div>
+    </div>`;
+  }).join('');
+}
+
+// ── SELF MONITOR ──────────────────────────────────────
+function saveSM(){
+  const pid=parseInt(document.getElementById('sm-pt').value);
+  if(!pid)return toast('เลือกผู้ป่วยก่อน','error');
+  const rec={id:DB.nid('sm'),patientId:pid,date:document.getElementById('sm-date').value,sbp:document.getElementById('sm-sbp').value,dbp:document.getElementById('sm-dbp').value,wt:document.getElementById('sm-wt').value,hr:document.getElementById('sm-hr').value,bx:[1,2,3,4,5,6].map(i=>document.getElementById('bx'+i).checked),note:document.getElementById('sm-note').value,at:new Date().toISOString()};
+  const recs=DB.get('sm');recs.push(rec);DB.set('sm',recs);
+  [1,2,3,4,5,6].forEach(i=>document.getElementById('bx'+i).checked=false);
+  document.getElementById('sm-note').value='';
+  toast('บันทึกข้อมูลวันนี้แล้ว');renderSMHist();renderBPChart();
+}
+function renderSMHist(){
+  const pid=parseInt(document.getElementById('sm-pt').value);
+  const el=document.getElementById('sm-hist');if(!el)return;
+  if(!pid){el.innerHTML='<div class="empty-sub text-sm" style="padding:12px 0">เลือกผู้ป่วยเพื่อดูประวัติ</div>';return;}
+  const recs=DB.get('sm').filter(r=>r.patientId===pid).slice(-7).reverse();
+  if(!recs.length){el.innerHTML='<div class="empty" style="padding:24px"><div class="empty-icon">📊</div><div class="empty-sub">ยังไม่มีการบันทึก</div></div>';return;}
+  el.innerHTML=recs.map(r=>{
+    const s=parseInt(r.sbp);const cl=s>=140?'chip-rose':s>=120?'chip-amber':'chip-teal';
+    const sc=(r.bx||[]).filter(Boolean).length;
+    return `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--slate-50)">
+      <div><div class="text-xs text-muted font-mono">${r.date}</div>${r.sbp?`<span class="chip ${cl} mt-4">${r.sbp}/${r.dbp} mmHg</span>`:''}</div>
+      <div style="text-align:right;font-size:12px;color:var(--slate-300)">${r.wt?r.wt+' กก.':''}<br>พฤติกรรม ${sc}/6</div>
+    </div>`;
+  }).join('');
+}
+function renderBPChart(){
+  const pid=parseInt(document.getElementById('sm-pt').value);
+  const el=document.getElementById('bp-chart');if(!el)return;
+  if(!pid){el.innerHTML='<div class="text-xs text-muted" style="padding:20px 0">เลือกผู้ป่วยเพื่อดูกราฟ</div>';return;}
+  const recs=DB.get('sm').filter(r=>r.patientId===pid&&r.sbp).slice(-7);
+  if(!recs.length){el.innerHTML='<div class="text-xs text-muted" style="padding:20px 0">ยังไม่มีข้อมูลความดัน</div>';return;}
+  const maxV=Math.max(...recs.map(r=>parseInt(r.sbp)||0),160);
+  const H=80;
+  el.innerHTML=recs.map(r=>{
+    const v=parseInt(r.sbp)||0;const h=Math.max(6,Math.round(v/maxV*H));
+    const cl=v>=140?'b-ht':v>=120?'b-pre':'b-normal';
+    return `<div class="bar-chart-bar ${cl}" style="height:${h}px" title="${r.sbp}/${r.dbp} · ${r.date}"><span class="b-val">${v}</span><span class="b-lbl">${(r.date||'').slice(5)}</span></div>`;
+  }).join('');
+}
+
+// ── APPOINTMENTS ──────────────────────────────────────
+function saveAppt(){
+  const pid=parseInt(document.getElementById('ap-pt').value);
+  const date=document.getElementById('ap-date').value;
+  if(!pid||!date)return toast('เลือกผู้ป่วยและวันที่','error');
+  const appts=DB.get('appointments');
+  appts.push({id:DB.nid('appointments'),patientId:pid,date,time:document.getElementById('ap-time').value,type:document.getElementById('ap-type').value,note:document.getElementById('ap-note').value,at:new Date().toISOString()});
+  DB.set('appointments',appts);
+  document.getElementById('ap-note').value='';
+  toast('บันทึกนัดหมายสำเร็จ');renderAppt();updateDash();
+}
+function delAppt(id){
+  DB.set('appointments',DB.get('appointments').filter(a=>a.id!==id));
+  toast('ลบนัดหมายแล้ว');renderAppt();updateDash();
+}
+function renderAppt(){
+  const f=document.getElementById('ap-filter').value;
+  const pts=DB.get('patients');
+  const now=new Date();now.setHours(0,0,0,0);
+  let appts=DB.get('appointments');
+  if(f==='upcoming')appts=appts.filter(a=>{const d=new Date(a.date);d.setHours(0,0,0,0);return d>=now;});
+  else if(f==='today')appts=appts.filter(a=>{const d=new Date(a.date);d.setHours(0,0,0,0);return d.getTime()===now.getTime();});
+  appts.sort((a,b)=>new Date(a.date)-new Date(b.date));
+  const el=document.getElementById('appt-list');
+  if(!appts.length){el.innerHTML='<div class="empty"><div class="empty-icon">📅</div><div class="empty-sub">ไม่มีนัดหมายที่ตรงกัน</div></div>';return;}
+  el.innerHTML=appts.map(a=>{
+    const p=pts.find(x=>x.id===a.patientId)||{name:'ไม่ทราบ',hn:''};
+    const dobj=new Date(a.date);
+    const isToday=dobj.toDateString()===now.toDateString();
+    const dd=dobj.toLocaleDateString('th-TH',{day:'2-digit'});
+    const mm=dobj.toLocaleDateString('th-TH',{month:'short'});
+    return `<div class="appt-row" style="${isToday?'background:var(--teal-50);margin:0 -22px;padding:12px 22px;border-radius:0':''}">
+      <div class="appt-date-block"><div class="adb-d">${dd}</div><div class="adb-m">${mm}</div></div>
+      <div class="appt-divider"></div>
+      <div class="appt-info"><div class="appt-name">${p.name} <span class="tag tag-slate" style="font-size:10px">${p.hn}</span>${isToday?'<span class="chip chip-amber" style="margin-left:6px;font-size:10.5px">วันนี้</span>':''}</div><div class="appt-type">${a.type}</div></div>
+      <div class="appt-time">${a.time}</div>
+      <button class="btn btn-ghost btn-icon btn-sm" onclick="delAppt(${a.id})">✕</button>
+    </div>`;
+  }).join('');
+}
+
+// ── REFERRAL ──────────────────────────────────────────
+function saveRef(){
+  const pid=parseInt(document.getElementById('rf-pt').value);
+  if(!pid)return toast('เลือกผู้ป่วยก่อน','error');
+  const refs=DB.get('referrals');
+  refs.push({id:DB.nid('referrals'),patientId:pid,to:document.getElementById('rf-to').value,date:document.getElementById('rf-date').value,urgency:document.getElementById('rf-urg').value,reason:document.getElementById('rf-reason').value,at:new Date().toISOString()});
+  DB.set('referrals',refs);
+  const pts=DB.get('patients');const i=pts.findIndex(p=>p.id===pid);if(i>=0){pts[i].referred=true;DB.set('patients',pts);}
+  document.getElementById('rf-reason').value='';
+  toast('บันทึกการส่งต่อแล้ว');renderRefHist();updateDash();
+}
+function renderRefHist(){
+  const refs=DB.get('referrals').slice(-8).reverse();
+  const pts=DB.get('patients');
+  const el=document.getElementById('ref-hist');if(!el)return;
+  if(!refs.length){el.innerHTML='<div class="empty" style="padding:24px"><div class="empty-icon">🔄</div><div class="empty-sub">ยังไม่มีประวัติ</div></div>';return;}
+  const ul={routine:'chip-teal',urgent:'chip-amber',emergency:'chip-rose'};
+  const ll={routine:'ปกติ',urgent:'เร่งด่วน',emergency:'ฉุกเฉิน'};
+  const bar={routine:'ref-urgency-routine',urgent:'ref-urgency-urgent',emergency:'ref-urgency-emergency'};
+  el.innerHTML=refs.map(r=>{
+    const p=pts.find(x=>x.id===r.patientId)||{name:'ไม่ทราบ'};
+    return `<div class="ref-row"><div class="ref-urgency-bar ${bar[r.urgency]}"></div><div style="flex:1"><div class="row" style="justify-content:space-between"><strong style="font-size:13.5px">${p.name}</strong><span class="chip ${ul[r.urgency]}">${ll[r.urgency]}</span></div><div class="text-xs text-muted mt-4 font-mono">${r.date} → ${r.to}</div>${r.reason?`<div style="font-size:12.5px;margin-top:4px;color:var(--ink-700)">${r.reason}</div>`:''}</div></div>`;
+  }).join('');
+}
+
+// ── DASHBOARD ─────────────────────────────────────────
+function updateDash(){
+  const pts=DB.get('patients');
+  const appts=DB.get('appointments');
+  const refs=DB.get('referrals');
+  const now=new Date();now.setHours(0,0,0,0);
+  const wk=new Date(now);wk.setDate(wk.getDate()+7);
+  const sc=pts.filter(p=>p.ckdResult).length;
+  const hr=pts.filter(p=>p.ckdResult&&['สูง','สูงมาก','ไตวาย'].includes(p.ckdResult.risk)).length;
+  const wa=appts.filter(a=>{const d=new Date(a.date);d.setHours(0,0,0,0);return d>=now&&d<=wk;}).length;
+  document.getElementById('d-total').textContent=pts.length;
+  document.getElementById('d-screened').textContent=sc;
+  document.getElementById('d-risk').textContent=hr;
+  document.getElementById('d-appt').textContent=wa;
+  const sr=pts.length?Math.round(sc/pts.length*100):0;
+  const rr=pts.length?Math.round(refs.length/pts.length*100):0;
+  document.getElementById('d-sr-pct').textContent=sr+'%';document.getElementById('d-sr-bar').style.width=sr+'%';
+  document.getElementById('d-rr-pct').textContent=rr+'%';document.getElementById('d-rr-bar').style.width=rr+'%';
+  // Upcoming appts
+  const dEl=document.getElementById('d-appt-list');
+  const upcoming=appts.filter(a=>{const d=new Date(a.date);d.setHours(0,0,0,0);return d>=now&&d<=wk;}).sort((a,b)=>new Date(a.date)-new Date(b.date)).slice(0,4);
+  dEl.innerHTML=upcoming.length?upcoming.map(a=>{
+    const p=pts.find(x=>x.id===a.patientId)||{name:'?'};
+    return `<div class="appt-row"><div class="appt-date-block"><div class="adb-d">${new Date(a.date).toLocaleDateString('th-TH',{day:'2-digit'})}</div><div class="adb-m">${new Date(a.date).toLocaleDateString('th-TH',{month:'short'})}</div></div><div class="appt-divider"></div><div class="appt-info"><div class="appt-name">${p.name}</div><div class="appt-type">${a.type}</div></div><div class="appt-time">${a.time}</div></div>`;
+  }).join(''):'<div class="empty" style="padding:20px"><div class="empty-icon">📅</div><div class="empty-sub">ไม่มีนัดสัปดาห์นี้</div></div>';
+  // High risk
+  const hEl=document.getElementById('d-highrisk-list');
+  const hrPts=pts.filter(p=>p.ckdResult&&['สูงมาก','ไตวาย'].includes(p.ckdResult.risk)).slice(0,5);
+  hEl.innerHTML=hrPts.length?hrPts.map(p=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--slate-50)"><div><div style="font-weight:600;font-size:13.5px">${p.name}</div><div class="text-xs text-muted">${p.disease||'—'}</div></div>${riskChip(p.ckdResult.risk)}</div>`).join(''):'<div class="empty" style="padding:20px"><div class="empty-icon">✓</div><div class="empty-title" style="font-size:13px">ไม่พบผู้เสี่ยงสูงมาก</div></div>';
+}
+
+// ── REPORTS ───────────────────────────────────────────
+function renderReports(){
+  const pts=DB.get('patients');const refs=DB.get('referrals');
+  const sc=pts.filter(p=>p.ckdResult).length;
+  const hi=pts.filter(p=>p.ckdResult&&['สูง','สูงมาก','ไตวาย'].includes(p.ckdResult.risk)).length;
+  document.getElementById('rp-tot').textContent=pts.length;
+  document.getElementById('rp-scr').textContent=sc;
+  document.getElementById('rp-hi').textContent=hi;
+  document.getElementById('rp-ref').textContent=refs.length;
+  // CKD dist
+  const gd={G1:0,G2:0,G3a:0,G3b:0,G4:0,G5:0};
+  pts.filter(p=>p.ckdResult).forEach(p=>{gd[p.ckdResult.gStage]=(gd[p.ckdResult.gStage]||0)+1;});
+  const total=Object.values(gd).reduce((a,b)=>a+b,0)||1;
+  const gc={'G1':'#A7F3D0','G2':'#6EE7B7','G3a':'#FDE68A','G3b':'#FCA5A5','G4':'#F87171','G5':'#EF4444'};
+  document.getElementById('rp-ckd-dist').innerHTML=Object.entries(gd).map(([g,n])=>`<div class="dist-row"><div class="dist-label">${g}</div><div class="dist-track"><div class="dist-fill" style="width:${Math.round(n/total*100)}%;background:${gc[g]||'#94a3b8'}"></div></div><div class="dist-count">${n}</div></div>`).join('');
+  // Disease dist
+  const dm={};pts.forEach(p=>{const d=p.disease||'ไม่ระบุ';dm[d]=(dm[d]||0)+1;});
+  const dc=['#BFDBFE','#A7F3D0','#FDE68A','#FED7AA','#FEE2E2','#DDD6FE'];
+  document.getElementById('rp-dis-dist').innerHTML=Object.entries(dm).map(([d,n],i)=>`<div class="dist-row"><div class="dist-label" style="min-width:80px;font-family:var(--font);font-size:11.5px">${d.split('(')[0].trim()}</div><div class="dist-track"><div class="dist-fill" style="width:${Math.round(n/Math.max(...Object.values(dm))*100)}%;background:${dc[i%dc.length]}"></div></div><div class="dist-count">${n}</div></div>`).join('');
+  // Table
+  document.getElementById('rp-table').innerHTML=pts.map(p=>{
+    const r=p.ckdResult;
+    const v=(x)=>x??'—';
+    const flag=(val,high,low=0)=>{
+      if(val===null||val===undefined)return'<span style="color:var(--slate-300)">—</span>';
+      const n=parseFloat(val);
+      if(n>high)return`<span style="color:var(--rose-600);font-weight:700">↑${n}</span>`;
+      if(n<low)return`<span style="color:var(--amber-600);font-weight:700">↓${n}</span>`;
+      return`<span style="color:var(--teal-600)">${n}</span>`;
+    };
+    return `<tr>
+      <td><span class="tag tag-blue">${p.hn}</span></td>
+      <td style="font-weight:600;font-size:13px">${p.name}</td>
+      <td>${p.age||'—'}</td>
+      <td style="font-size:12px">${p.disease||'—'}</td>
+      <td class="font-mono" style="font-weight:700">${r?r.eGFR:'—'}</td>
+      <td class="font-mono">${r?`${r.gStage}/${r.aStage}`:'—'}</td>
+      <td>${riskChip(r?.risk)}</td>
+      <td class="font-mono">${flag(r?.fbs,99,74)}</td>
+      <td class="font-mono">${flag(r?.hba1c,5.9)}</td>
+      <td class="font-mono">${flag(r?.microalb,20)}</td>
+      <td class="font-mono">${flag(r?.ldl,100)}</td>
+      <td>${p.referred?'<span class="chip chip-amber">ส่งต่อแล้ว</span>':'<span class="chip chip-gray">—</span>'}</td>
+    </tr>`;
+  }).join('')||'<tr><td colspan="12" style="text-align:center;padding:32px;color:var(--slate-300)">ยังไม่มีข้อมูล</td></tr>';
+}
+
+function doExport(){
+  const pts=DB.get('patients');
+  const hdr='HN,ชื่อ-สกุล,อายุ,เพศ,โรค,eGFR,ระดับ G,ระดับ A,ความเสี่ยง,FBS,HbA1C,Microalb(mg/L),UACR,Creatinine,K,AST,ALT,Cholesterol,TG,HDL,LDL,ส่งต่อ\n';
+  const rows=pts.map(p=>{
+    const r=p.ckdResult||{};
+    return[p.hn,p.name,p.age,p.sex,p.disease,
+      r.eGFR||'',r.gStage||'',r.aStage||'',r.risk||'ยังไม่คัดกรอง',
+      r.fbs||'',r.hba1c||'',r.microalb||'',r.uacr||'',
+      r.cr||'',r.k||'',r.ast||'',r.alt||'',
+      r.chol||'',r.tg||'',r.hdl||'',r.ldl||'',
+      p.referred?'ส่งต่อแล้ว':''
+    ].join(',');
+  }).join('\n');
+  const b=new Blob(['\uFEFF'+hdr+rows],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='ncd_care_hub_export.csv';a.click();
+  toast('Export CSV สำเร็จ');
+}
+</script>
+</body>
+</html>
