@@ -420,7 +420,7 @@ body{font-family:var(--font);background:var(--canvas);color:var(--ink-800);line-
         </div>
         <div class="form-grid-3">
           <div class="form-group"><label class="form-label">เพศ</label><select class="form-input form-select" id="f-sex"><option>ชาย</option><option>หญิง</option></select></div>
-          <div class="form-group"><label class="form-label">อายุ (ปี)</label><input class="form-input" id="f-age" type="number" min="0" max="120" placeholder="–"></div>
+          <div class="form-group"><label class="form-label">วันเกิด (ค.ศ.) <span class="form-required">*</span></label><input class="form-input" id="f-dob" type="date" onchange="updateAgePreview()"><div id="f-age-preview" style="font-size:12px;color:var(--teal-600);margin-top:3px"></div></div>
           <div class="form-group"><label class="form-label">เบอร์โทร</label><input class="form-input" id="f-phone" placeholder="08x-xxx-xxxx"></div>
         </div>
 
@@ -457,7 +457,7 @@ body{font-family:var(--font);background:var(--canvas);color:var(--ink-800);line-
             <div class="card-title mb-16">ข้อมูลการตรวจ</div>
             <div class="form-group mb-12"><label class="form-label">ผู้ป่วย</label><select class="form-input form-select" id="ckd-pt"><option value="">— เลือกผู้ป่วย —</option></select></div>
             <div class="form-grid-2">
-              <div class="form-group"><label class="form-label">อายุ (ปี)</label><input class="form-input" id="ckd-age" type="number" placeholder="–"></div>
+              <div class="form-group"><label class="form-label">วันที่คัดกรอง</label><input class="form-input" id="ckd-date" type="date" onchange="const p=DB.get('patients').find(x=>x.id===parseInt(document.getElementById('ckd-pt').value));if(p&&p.dob){const age=calcAgeFromDob(p.dob,this.value);document.getElementById('ckd-age').value=age;const h=document.getElementById('ckd-age-hint');if(h)h.textContent='คำนวณจากวันเกิด '+p.dob+' ณ วันที่ '+this.value;}"></div><div class="form-group"><label class="form-label">อายุ ณ วันคัดกรอง (ปี)</label><input class="form-input" id="ckd-age" type="number" placeholder="–" readonly style="background:var(--canvas);color:var(--teal-600);font-weight:600"><div id="ckd-age-hint" style="font-size:11px;color:var(--slate-300);margin-top:2px"></div></div>
               <div class="form-group"><label class="form-label">เพศ</label><select class="form-input form-select" id="ckd-sex"><option value="1">ชาย</option><option value="0">หญิง</option></select></div>
             </div>
             <!-- ── ไต ── -->
@@ -872,7 +872,7 @@ function savePt(){
   const eid=parseInt(document.getElementById('f-edit-id').value)||0;
   if(!eid&&pts.find(p=>p.hn===hn))return toast('HN นี้มีอยู่ในระบบแล้ว','error');
   const pt={id:eid||DB.nid('patients'),hn,name,
-    sex:document.getElementById('f-sex').value,age:document.getElementById('f-age').value,
+    sex:document.getElementById('f-sex').value,dob:document.getElementById('f-dob').value,
     phone:document.getElementById('f-phone').value,disease:document.getElementById('f-disease').value,
     med:document.getElementById('f-med').value,wt:document.getElementById('f-wt').value,
     ht:document.getElementById('f-ht').value,waist:document.getElementById('f-waist').value,
@@ -889,13 +889,13 @@ function savePt(){
   go('patient-list', qsel('patient-list'));
 }
 function clearPtForm(){
-  ['f-hn','f-name','f-age','f-phone','f-med','f-wt','f-ht','f-waist','f-sbp','f-dbp','f-note','f-edit-id'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  ['f-hn','f-name','f-dob','f-phone','f-med','f-wt','f-ht','f-waist','f-sbp','f-dbp','f-note','f-edit-id'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});document.getElementById('f-age-preview').textContent='';
   document.getElementById('f-sex').value='ชาย';
   document.getElementById('f-disease').value='กลุ่มเสี่ยง HT (Pre-HT)';
 }
 function editPt(id){
   const p=DB.get('patients').find(x=>x.id===id);if(!p)return;
-  const flds={hn:p.hn,name:p.name,age:p.age||'',phone:p.phone||'',med:p.med||'','wt':p.wt||'','ht':p.ht||'',waist:p.waist||'',sbp:p.sbp||'',dbp:p.dbp||'',note:p.note||''};
+  const flds={hn:p.hn,name:p.name,dob:p.dob||'',phone:p.phone||'',med:p.med||'','wt':p.wt||'','ht':p.ht||'',waist:p.waist||'',sbp:p.sbp||'',dbp:p.dbp||'',note:p.note||''};if(p.dob){const ap=document.getElementById('f-age-preview');if(ap)ap.textContent='อายุปัจจุบัน: '+calcAgeFromDob(p.dob)+' ปี';}
   Object.entries(flds).forEach(([k,v])=>{const el=document.getElementById('f-'+k);if(el)el.value=v;});
   document.getElementById('f-sex').value=p.sex||'ชาย';
   document.getElementById('f-disease').value=p.disease||'กลุ่มเสี่ยง HT (Pre-HT)';
@@ -923,7 +923,7 @@ function renderPtTable(){
     return `<tr>
       <td><span class="tag tag-blue">${p.hn}</span></td>
       <td><div style="font-weight:600;font-size:13.5px">${p.name}</div>${p.phone?`<div class="text-xs text-muted font-mono">${p.phone}</div>`:''}</td>
-      <td><span class="text-sm">${p.age||'—'} ปี / ${p.sex||'—'}</span></td>
+      <td><span class="text-sm">${p.dob?calcAgeFromDob(p.dob):(p.age||'—')} ปี / ${p.sex||'—'}</span></td>
       <td style="font-size:12.5px;max-width:140px">${p.disease||'—'}</td>
       <td>${r?`<span class="font-mono text-sm" style="font-weight:700;color:var(--teal-600)">${r.eGFR}</span><div class="text-xs text-muted">${r.gStage} / ${r.aStage}</div>`:'<span class="text-muted text-xs">ยังไม่ตรวจ</span>'}</td>
       <td>${riskChip(r?.risk)}</td>
@@ -935,12 +935,43 @@ function renderPtTable(){
 
 // ── CKD ───────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded',()=>{
+  // ตั้งค่า default วันที่คัดกรอง = วันนี้
+  const ckdDateEl=document.getElementById('ckd-date');
+  if(ckdDateEl&&!ckdDateEl.value)ckdDateEl.value=new Date().toISOString().slice(0,10);
   document.getElementById('ckd-pt').addEventListener('change',function(){
     const p=DB.get('patients').find(x=>x.id===parseInt(this.value));
-    if(p){if(p.age)document.getElementById('ckd-age').value=p.age;if(p.sex)document.getElementById('ckd-sex').value=p.sex==='ชาย'?'1':'0';}
+    if(p){
+      if(p.dob){
+        const screenDate=document.getElementById('ckd-date')?document.getElementById('ckd-date').value:'';
+        const age=calcAgeFromDob(p.dob, screenDate||null);
+        document.getElementById('ckd-age').value=age;
+        const hint=document.getElementById('ckd-age-hint');
+        if(hint)hint.textContent='คำนวณจากวันเกิด '+p.dob+(screenDate?' ณ วันที่ '+screenDate:' ณ วันนี้');
+      } else if(p.age){
+        document.getElementById('ckd-age').value=p.age;
+      }
+      if(p.sex)document.getElementById('ckd-sex').value=p.sex==='ชาย'?'1':'0';
+    }
   });
   document.getElementById('sm-pt').addEventListener('change',()=>{renderSMHist();renderBPChart();});
 });
+// ── คำนวณอายุจากวันเกิด ───────────────────────────────
+function calcAgeFromDob(dob, refDateStr){
+  if(!dob)return null;
+  const birth=new Date(dob);
+  const ref=refDateStr?new Date(refDateStr):new Date();
+  let age=ref.getFullYear()-birth.getFullYear();
+  const m=ref.getMonth()-birth.getMonth();
+  if(m<0||(m===0&&ref.getDate()<birth.getDate()))age--;
+  return age;
+}
+function updateAgePreview(){
+  const dob=document.getElementById('f-dob').value;
+  const el=document.getElementById('f-age-preview');
+  if(!el)return;
+  if(dob){const a=calcAgeFromDob(dob);el.textContent='อายุปัจจุบัน: '+a+' ปี';}
+  else el.textContent='';
+}
 function calcCKD(){
   const age=parseFloat(document.getElementById('ckd-age').value);
   const sex=parseFloat(document.getElementById('ckd-sex').value);
@@ -1231,7 +1262,7 @@ function renderReports(){
     return `<tr>
       <td><span class="tag tag-blue">${p.hn}</span></td>
       <td style="font-weight:600;font-size:13px">${p.name}</td>
-      <td>${p.age||'—'}</td>
+      <td>${p.dob?calcAgeFromDob(p.dob):(p.age||'—')}</td>
       <td style="font-size:12px">${p.disease||'—'}</td>
       <td class="font-mono" style="font-weight:700">${r?r.eGFR:'—'}</td>
       <td class="font-mono">${r?`${r.gStage}/${r.aStage}`:'—'}</td>
