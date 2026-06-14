@@ -872,7 +872,7 @@ function savePt(){
   const eid=parseInt(document.getElementById('f-edit-id').value)||0;
   if(!eid&&pts.find(p=>p.hn===hn))return toast('HN นี้มีอยู่ในระบบแล้ว','error');
   const pt={id:eid||DB.nid('patients'),hn,name,
-    sex:document.getElementById('f-sex').value,dob:document.getElementById('f-dob').value,
+    sex:document.getElementById('f-sex').value,dob:document.getElementById('f-dob').value,age:document.getElementById('f-dob').value?'':( (()=>{const ei=parseInt(document.getElementById('f-edit-id').value)||0;if(ei){const op=DB.get('patients').find(p=>p.id===ei);return op?op.age||'':'';}return '';})() ),
     phone:document.getElementById('f-phone').value,disease:document.getElementById('f-disease').value,
     med:document.getElementById('f-med').value,wt:document.getElementById('f-wt').value,
     ht:document.getElementById('f-ht').value,waist:document.getElementById('f-waist').value,
@@ -895,7 +895,7 @@ function clearPtForm(){
 }
 function editPt(id){
   const p=DB.get('patients').find(x=>x.id===id);if(!p)return;
-  const flds={hn:p.hn,name:p.name,dob:p.dob||'',phone:p.phone||'',med:p.med||'','wt':p.wt||'','ht':p.ht||'',waist:p.waist||'',sbp:p.sbp||'',dbp:p.dbp||'',note:p.note||''};if(p.dob){const ap=document.getElementById('f-age-preview');if(ap)ap.textContent='อายุปัจจุบัน: '+calcAgeFromDob(p.dob)+' ปี';}
+  const flds={hn:p.hn,name:p.name,dob:p.dob||'',phone:p.phone||'',med:p.med||'','wt':p.wt||'','ht':p.ht||'',waist:p.waist||'',sbp:p.sbp||'',dbp:p.dbp||'',note:p.note||''};const ap=document.getElementById('f-age-preview');if(ap){if(p.dob)ap.textContent='อายุปัจจุบัน: '+calcAgeFromDob(p.dob)+' ปี';else if(p.age)ap.textContent='⚠️ ข้อมูลเดิมระบุอายุ '+p.age+' ปี — กรุณากรอกวันเกิดเพื่อความถูกต้อง';}
   Object.entries(flds).forEach(([k,v])=>{const el=document.getElementById('f-'+k);if(el)el.value=v;});
   document.getElementById('f-sex').value=p.sex||'ชาย';
   document.getElementById('f-disease').value=p.disease||'กลุ่มเสี่ยง HT (Pre-HT)';
