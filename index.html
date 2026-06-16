@@ -396,7 +396,18 @@ body{font-family:var(--font);background:var(--canvas);color:var(--ink-800);line-
       <div class="page-header"><h2>รายชื่อผู้ป่วย</h2><p>ผู้ป่วยที่ลงทะเบียนในระบบทั้งหมด</p></div>
       <div class="card">
         <div class="card-head">
-          <div class="search-wrap"><input class="form-input" id="pt-search" placeholder="ค้นหาชื่อ หรือ HN…" oninput="renderPtTable()" style="width:240px"></div>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <div class="search-wrap"><input class="form-input" id="pt-search" placeholder="ค้นหาชื่อ หรือ HN…" oninput="renderPtTable()" style="width:220px"></div>
+            <select class="form-input form-select" id="pt-sort" onchange="renderPtTable()" style="width:160px">
+              <option value="name-asc">ชื่อ ก→ฮ</option>
+              <option value="name-desc">ชื่อ ฮ→ก</option>
+              <option value="hn-asc">HN น้อย→มาก</option>
+              <option value="hn-desc">HN มาก→น้อย</option>
+              <option value="age-asc">อายุ น้อย→มาก</option>
+              <option value="age-desc">อายุ มาก→น้อย</option>
+              <option value="risk-desc">ความเสี่ยง สูง→ต่ำ</option>
+            </select>
+          </div>
           <button class="btn btn-primary" onclick="go('add-patient', qsel('add-patient'))">+ เพิ่มผู้ป่วย</button>
         </div>
         <div class="table-wrap">
@@ -420,7 +431,12 @@ body{font-family:var(--font);background:var(--canvas);color:var(--ink-800);line-
         </div>
         <div class="form-grid-3">
           <div class="form-group"><label class="form-label">เพศ</label><select class="form-input form-select" id="f-sex"><option>ชาย</option><option>หญิง</option></select></div>
-          <div class="form-group"><label class="form-label">วันเกิด (ค.ศ.) <span class="form-required">*</span></label><input class="form-input" id="f-dob" type="date" onchange="updateAgePreview()"><div id="f-age-preview" style="font-size:12px;color:var(--teal-600);margin-top:3px"></div></div>
+          <div class="form-group"><label class="form-label">วันเกิด (พ.ศ.) <span class="form-required">*</span></label><div style="display:flex;gap:4px;align-items:center">
+              <input class="form-input" id="f-dob-d" type="number" min="1" max="31" placeholder="วัน" style="width:60px" oninput="updateAgePreview()">
+              <input class="form-input" id="f-dob-m" type="number" min="1" max="12" placeholder="เดือน" style="width:70px" oninput="updateAgePreview()">
+              <input class="form-input" id="f-dob-y" type="number" min="2400" max="2600" placeholder="ปี พ.ศ." style="width:100px" oninput="updateAgePreview()">
+            </div>
+            <div id="f-age-preview" style="font-size:12px;color:var(--teal-600);margin-top:3px"></div></div>
           <div class="form-group"><label class="form-label">เบอร์โทร</label><input class="form-input" id="f-phone" placeholder="08x-xxx-xxxx"></div>
         </div>
 
@@ -824,7 +840,7 @@ function go(id,btn){
   if(id==='ckd'){popDrops();renderCKDHist();}
   if(id==='monitor'){popDrops();renderSMHist();renderBPChart();}
   if(id==='refer'){popDrops();renderRefHist();}
-  if(id==='add-patient')clearPtForm();
+  if(id==='add-patient'&&!window._editingPt)clearPtForm();window._editingPt=false;
   if(window.innerWidth<=900)document.getElementById('sidebar').classList.remove('open');
 }
 
@@ -872,7 +888,7 @@ function savePt(){
   const eid=parseInt(document.getElementById('f-edit-id').value)||0;
   if(!eid&&pts.find(p=>p.hn===hn))return toast('HN นี้มีอยู่ในระบบแล้ว','error');
   const pt={id:eid||DB.nid('patients'),hn,name,
-    sex:document.getElementById('f-sex').value,dob:document.getElementById('f-dob').value,age:document.getElementById('f-dob').value?'':( (()=>{const ei=parseInt(document.getElementById('f-edit-id').value)||0;if(ei){const op=DB.get('patients').find(p=>p.id===ei);return op?op.age||'':'';}return '';})() ),
+    sex:document.getElementById('f-sex').value,dob:getDobISO(),
     phone:document.getElementById('f-phone').value,disease:document.getElementById('f-disease').value,
     med:document.getElementById('f-med').value,wt:document.getElementById('f-wt').value,
     ht:document.getElementById('f-ht').value,waist:document.getElementById('f-waist').value,
@@ -889,17 +905,18 @@ function savePt(){
   go('patient-list', qsel('patient-list'));
 }
 function clearPtForm(){
-  ['f-hn','f-name','f-dob','f-phone','f-med','f-wt','f-ht','f-waist','f-sbp','f-dbp','f-note','f-edit-id'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});document.getElementById('f-age-preview').textContent='';
+  ['f-hn','f-name','f-dob-d','f-dob-m','f-dob-y','f-phone','f-med','f-wt','f-ht','f-waist','f-sbp','f-dbp','f-note','f-edit-id'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});const _ap=document.getElementById('f-age-preview');if(_ap)_ap.textContent='';
   document.getElementById('f-sex').value='ชาย';
   document.getElementById('f-disease').value='กลุ่มเสี่ยง HT (Pre-HT)';
 }
 function editPt(id){
   const p=DB.get('patients').find(x=>x.id===id);if(!p)return;
-  const flds={hn:p.hn,name:p.name,dob:p.dob||'',phone:p.phone||'',med:p.med||'','wt':p.wt||'','ht':p.ht||'',waist:p.waist||'',sbp:p.sbp||'',dbp:p.dbp||'',note:p.note||''};const ap=document.getElementById('f-age-preview');if(ap){if(p.dob)ap.textContent='อายุปัจจุบัน: '+calcAgeFromDob(p.dob)+' ปี';else if(p.age)ap.textContent='⚠️ ข้อมูลเดิมระบุอายุ '+p.age+' ปี — กรุณากรอกวันเกิดเพื่อความถูกต้อง';}
-  Object.entries(flds).forEach(([k,v])=>{const el=document.getElementById('f-'+k);if(el)el.value=v;});
+  const flds={hn:p.hn,name:p.name,phone:p.phone||'',med:p.med||'','wt':p.wt||'','ht':p.ht||'',waist:p.waist||'',sbp:p.sbp||'',dbp:p.dbp||'',note:p.note||''};setDobFields(p.dob||'');const ap=document.getElementById('f-age-preview');if(ap){if(p.dob)ap.textContent='อายุปัจจุบัน: '+calcAgeFromDob(p.dob)+' ปี';else if(p.age)ap.textContent='⚠️ ข้อมูลเดิมระบุอายุ '+p.age+' ปี — กรุณากรอกวันเกิด';}
+  Object.entries(flds).forEach(([k,v])=>{const el=document.getElementById('f-'+k);if(el)el.value=v;});setDobFields(p.dob||'');
   document.getElementById('f-sex').value=p.sex||'ชาย';
   document.getElementById('f-disease').value=p.disease||'กลุ่มเสี่ยง HT (Pre-HT)';
   document.getElementById('f-edit-id').value=p.id;
+  window._editingPt=true;
   go('add-patient', qsel('add-patient'));
 }
 function delPt(id){
@@ -910,7 +927,19 @@ function delPt(id){
 }
 function renderPtTable(){
   const q=(document.getElementById('pt-search')||{value:''}).value.toLowerCase();
-  const pts=DB.get('patients').filter(p=>!q||p.name.toLowerCase().includes(q)||p.hn.toLowerCase().includes(q));
+  const sortVal=(document.getElementById('pt-sort')||{value:'name-asc'}).value;
+  const riskOrder={low:0,moderate:1,high:2,vhigh:3};
+  let pts=DB.get('patients').filter(p=>!q||p.name.toLowerCase().includes(q)||p.hn.toLowerCase().includes(q));
+  pts.sort((a,b)=>{
+    if(sortVal==='name-asc')return a.name.localeCompare(b.name,'th');
+    if(sortVal==='name-desc')return b.name.localeCompare(a.name,'th');
+    if(sortVal==='hn-asc')return a.hn.localeCompare(b.hn,'th',{numeric:true});
+    if(sortVal==='hn-desc')return b.hn.localeCompare(a.hn,'th',{numeric:true});
+    if(sortVal==='age-asc')return (a.dob?calcAgeFromDob(a.dob):parseInt(a.age||0))-(b.dob?calcAgeFromDob(b.dob):parseInt(b.age||0));
+    if(sortVal==='age-desc')return (b.dob?calcAgeFromDob(b.dob):parseInt(b.age||0))-(a.dob?calcAgeFromDob(a.dob):parseInt(a.age||0));
+    if(sortVal==='risk-desc')return (riskOrder[b.ckdResult?.risk]||0)-(riskOrder[a.ckdResult?.risk]||0);
+    return 0;
+  });
   const appts=DB.get('appointments');
   const now=new Date();now.setHours(0,0,0,0);
   const tbody=document.getElementById('pt-tbody');
@@ -928,7 +957,7 @@ function renderPtTable(){
       <td>${r?`<span class="font-mono text-sm" style="font-weight:700;color:var(--teal-600)">${r.eGFR}</span><div class="text-xs text-muted">${r.gStage} / ${r.aStage}</div>`:'<span class="text-muted text-xs">ยังไม่ตรวจ</span>'}</td>
       <td>${riskChip(r?.risk)}</td>
       <td><span class="text-sm font-mono">${next?next.date:'—'}</span></td>
-      <td><div class="row" style="gap:4px"><button class="btn btn-ghost btn-icon btn-sm" onclick="editPt(${p.id})" title="แก้ไข">✎</button><button class="btn btn-danger btn-icon btn-sm" onclick="delPt(${p.id})" title="ลบ">✕</button></div></td>
+      <td><div class="row" style="gap:4px"><button class="btn btn-outline btn-icon btn-sm" onclick="editPt(${p.id})" title="แก้ไข" style="color:var(--teal-600);border-color:var(--teal-600)">✎</button><button class="btn btn-danger btn-icon btn-sm" onclick="delPt(${p.id})" title="ลบ">✕</button></div></td>
     </tr>`;
   }).join('');
 }
@@ -965,8 +994,25 @@ function calcAgeFromDob(dob, refDateStr){
   if(m<0||(m===0&&ref.getDate()<birth.getDate()))age--;
   return age;
 }
+function getDobISO(){
+  const d=parseInt(document.getElementById('f-dob-d')?.value||0);
+  const m=parseInt(document.getElementById('f-dob-m')?.value||0);
+  const yBE=parseInt(document.getElementById('f-dob-y')?.value||0);
+  if(!d||!m||!yBE)return '';
+  const yCE=yBE-543;
+  return yCE+'-'+String(m).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+}
+function setDobFields(isoDate){
+  if(!isoDate)return;
+  const parts=isoDate.split('-');
+  if(parts.length<3)return;
+  const yCE=parseInt(parts[0]),mo=parseInt(parts[1]),dd=parseInt(parts[2]);
+  if(document.getElementById('f-dob-d'))document.getElementById('f-dob-d').value=dd;
+  if(document.getElementById('f-dob-m'))document.getElementById('f-dob-m').value=mo;
+  if(document.getElementById('f-dob-y'))document.getElementById('f-dob-y').value=yCE+543;
+}
 function updateAgePreview(){
-  const dob=document.getElementById('f-dob').value;
+  const dob=getDobISO();
   const el=document.getElementById('f-age-preview');
   if(!el)return;
   if(dob){const a=calcAgeFromDob(dob);el.textContent='อายุปัจจุบัน: '+a+' ปี';}
@@ -1078,6 +1124,12 @@ function saveCKDRes(){
   const hist=DB.get('ckd-hist');hist.push({id:DB.nid('ckd-hist'),patientId:pid,...res,at:new Date().toISOString()});DB.set('ckd-hist',hist);
   toast('บันทึกผล CKD ลงประวัติแล้ว');renderCKDHist();updateDash();
 }
+function delCKDHist(id){
+  confirm2('ลบประวัติ','ยืนยันลบประวัติการคัดกรองนี้?',()=>{
+    DB.set('ckd-hist',DB.get('ckd-hist').filter(h=>h.id!==id));
+    renderCKDHist();updateDash();toast('ลบประวัติแล้ว');
+  });
+}
 function renderCKDHist(){
   const hist=DB.get('ckd-hist').slice(-8).reverse();
   const pts=DB.get('patients');
@@ -1087,7 +1139,10 @@ function renderCKDHist(){
     const p=pts.find(x=>x.id===h.patientId)||{name:'ไม่ทราบ'};
     return `<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--slate-50)">
       <div><div style="font-weight:600;font-size:13.5px">${p.name}</div><div class="text-xs text-muted font-mono">${h.date||h.at?.slice(0,10)}</div></div>
-      <div style="text-align:right"><div class="font-mono text-sm" style="font-weight:700;color:var(--teal-600)">${h.gStage}/${h.aStage} · ${h.eGFR}</div>${riskChip(h.risk)}</div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <div style="text-align:right"><div class="font-mono text-sm" style="font-weight:700;color:var(--teal-600)">${h.gStage}/${h.aStage} · ${h.eGFR}</div>${riskChip(h.risk)}</div>
+        <button class="btn btn-danger btn-icon btn-sm" onclick="delCKDHist(${h.id})" title="ลบประวัตินี้" style="flex-shrink:0">✕</button>
+      </div>
     </div>`;
   }).join('');
 }
