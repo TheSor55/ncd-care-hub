@@ -212,6 +212,80 @@ body{font-family:var(--font);background:var(--canvas);color:var(--ink-800);line-
 .appt-type{font-size:12px;color:var(--slate-300);margin-top:1px}
 .appt-time{font-size:12px;font-weight:600;color:var(--teal-600);font-family:var(--mono)}
 
+/* ─── DBP BARS & EMERGENCY MODAL ─── */
+.bar-chart-bar-dbp {
+  width: 10px;
+  border-radius: 4px 4px 0 0;
+  min-height: 4px;
+  position: relative;
+  cursor: default;
+  transition: opacity .2s;
+}
+.bar-chart-bar-dbp:hover {
+  opacity: .8;
+}
+.bar-chart-bar-dbp .b-val {
+  position: absolute;
+  top: -14px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 8.5px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.b-dbp-normal {
+  background: #cbd5e1; /* slate-300 */
+}
+.b-dbp-normal .b-val {
+  color: #475569; /* slate-600 */
+}
+.b-dbp-pre {
+  background: #fde047; /* yellow-300 */
+}
+.b-dbp-pre .b-val {
+  color: #a16207; /* yellow-700 */
+}
+.b-dbp-ht {
+  background: #fda4af; /* rose-300 */
+}
+.b-dbp-ht .b-val {
+  color: #be123c; /* rose-700 */
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); }
+  100% { transform: scale(1.08); }
+}
+
+/* responsive media queries */
+@media (max-width: 900px) {
+  .main-layout {
+    flex-direction: column !important;
+  }
+  .sidebar {
+    width: 100% !important;
+    height: auto !important;
+    flex-direction: row !important;
+    overflow-x: auto !important;
+    padding: 8px !important;
+    gap: 8px !important;
+    border-right: none !important;
+    border-bottom: 1px solid var(--slate-100) !important;
+  }
+  .sb-item {
+    padding: 6px 12px !important;
+    font-size: 12.5px !important;
+    white-space: nowrap !important;
+    margin-bottom: 0 !important;
+  }
+  .sb-icon {
+    margin-right: 4px !important;
+  }
+  .content {
+    padding: 16px !important;
+  }
+}
+
 /* ─── REFERRAL CARD ─── */
 .ref-row{padding:12px 14px;border-radius:var(--r);border:1px solid var(--slate-100);margin-bottom:8px;display:flex;justify-content:space-between;align-items:flex-start;background:var(--white)}
 .ref-urgency-bar{width:3px;border-radius:2px;align-self:stretch;flex-shrink:0;margin-right:10px}
@@ -482,8 +556,19 @@ body{font-family:var(--font);background:var(--canvas);color:var(--ink-800);line-
               <div class="form-group"><label class="form-label">Creatinine (mg/dL)</label><input class="form-input font-mono" id="ckd-cr" type="number" step="0.01" placeholder="ปกติ ♂0.67-1.17  ♀0.51-0.9"></div>
               <div class="form-group"><label class="form-label">UACR — Urine Albumin/Creatinine (mg/g)</label><input class="form-input font-mono" id="ckd-uacr" type="number" step="0.1" placeholder="ปกติ &lt;30 mg/g"></div>
             </div>
-            <div class="form-grid-2">
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap:16px; margin-bottom: 12px;">
               <div class="form-group"><label class="form-label">Urine Microalbumin (mg/L)</label><input class="form-input font-mono" id="ckd-microalb" type="number" step="0.1" placeholder="ปกติ &lt;20 mg/L"></div>
+              <div class="form-group">
+                <label class="form-label">Urine Dipstick Protein (ทางเลือก)</label>
+                <select class="form-input form-select font-mono" id="ckd-dipstick" style="width:100%;">
+                  <option value="">-- ผลแถบสี (ถ้าไม่มีแล็บ) --</option>
+                  <option value="neg">Negative / Trace</option>
+                  <option value="1+">1+</option>
+                  <option value="2+">2+</option>
+                  <option value="3+">3+</option>
+                  <option value="4+">4+</option>
+                </select>
+              </div>
               <div class="form-group"><label class="form-label">K (Potassium) (mmol/L)</label><input class="form-input font-mono" id="ckd-k" type="number" step="0.01" placeholder="ปกติ 3.4 – 4.5"></div>
             </div>
             <!-- ── น้ำตาล / HbA1c ── -->
@@ -1024,6 +1109,7 @@ function calcCKD(){
   const cr=parseFloat(document.getElementById('ckd-cr').value);
   const uacr=parseFloat(document.getElementById('ckd-uacr').value);
   const microalb=parseFloat(document.getElementById('ckd-microalb').value);
+  const dipstick=document.getElementById('ckd-dipstick').value;
   const k=parseFloat(document.getElementById('ckd-k').value);
   const fbs=parseFloat(document.getElementById('ckd-fbs').value);
   const hba1c=parseFloat(document.getElementById('ckd-hba1c').value);
@@ -1033,18 +1119,31 @@ function calcCKD(){
   const tg=parseFloat(document.getElementById('ckd-tg').value);
   const hdl=parseFloat(document.getElementById('ckd-hdl').value);
   const ldl=parseFloat(document.getElementById('ckd-ldl').value);
-  if(!age||!cr)return toast('กรุณากรอกอายุและค่า Creatinine','error');
+
+  // ตรวจสอบความถูกต้องของข้อมูล (Input Validation)
+  if(isNaN(cr) || cr <= 0) return toast('ค่า Creatinine ต้องมากกว่า 0 (เช่น 0.8 หรือ 1.2)','error');
+  if(isNaN(age) || age <= 0) return toast('อายุสะสมต้องมากกว่า 0','error');
+  if(cr > 25) return toast('ค่า Creatinine สูงเกินเกณฑ์ปกติทางชีวภาพ กรุณาตรวจสอบความถูกต้อง','warning');
+  if(age > 120) return toast('อายุคนไข้สูงเกินเกณฑ์ปกติ กรุณาตรวจสอบการกรอกข้อมูล','warning');
+
   const kk=sex===1?0.9:0.7,a=sex===1?-0.302:-0.241,sf=sex===1?1.0:1.012;
   const ck=cr/kk;
   const eGFR=+(142*Math.pow(Math.min(ck,1),a)*Math.pow(Math.max(ck,1),-1.2)*Math.pow(0.9938,age)*sf).toFixed(1);
   let g=eGFR>=90?'G1':eGFR>=60?'G2':eGFR>=45?'G3a':eGFR>=30?'G3b':eGFR>=15?'G4':'G5';
-  // ใช้ค่า Microalbumin ช่วยแปล A stage ถ้าไม่มี UACR
+  
+  // แปลผลระดับโปรตีนในปัสสาวะ (Staging Albuminuria) ด้วยแผ่นจุ่มปัสสาวะ Urine Dipstick เสริม
+  let av='A1';
   let aUse=uacr;
-  if(isNaN(uacr)&&!isNaN(microalb)){
-    // Microalbumin mg/L → UACR mg/g โดยประมาณ (× creatinine urine ≈ 1 g/L assumed)
-    aUse=microalb; // เทียบเป็น UACR โดยตรง (range เดียวกัน: <30, 30-300, >300)
+  if(!isNaN(uacr)){
+    av=uacr>=300?'A3':uacr>=30?'A2':'A1';
+  } else if(!isNaN(microalb)){
+    av=microalb>=200?'A3':microalb>=20?'A2':'A1';
+  } else if(dipstick){
+    if(dipstick==='1+') av='A2';
+    else if(dipstick==='2+' || dipstick==='3+' || dipstick==='4+') av='A3';
+    else av='A1';
   }
-  let av=isNaN(aUse)?'A1':aUse>=300?'A3':aUse>=30?'A2':'A1';
+  
   const rm={G1:{A1:'ต่ำ',A2:'ปานกลาง',A3:'สูง'},G2:{A1:'ต่ำ',A2:'ปานกลาง',A3:'สูง'},G3a:{A1:'ปานกลาง',A2:'สูง',A3:'สูงมาก'},G3b:{A1:'สูง',A2:'สูงมาก',A3:'สูงมาก'},G4:{A1:'สูงมาก',A2:'สูงมาก',A3:'สูงมาก'},G5:{A1:'ไตวาย',A2:'ไตวาย',A3:'ไตวาย'}};
   const risk=rm[g][av];
   document.querySelectorAll('.heatmap td[id^="c-"]').forEach(c=>c.classList.remove('hm-active'));
@@ -1058,6 +1157,27 @@ function calcCKD(){
   document.getElementById('r-advice').innerHTML=`<strong>แนวทาง:</strong> ${aw[risk]||''}`;
 
   // ── Lab Flags ────────────────────────────────────────
+  const isFem=sex===0;
+  const flags=[];
+  const flag=(label,val,low,high,unit)=>{
+    if(isNaN(val))return;
+    if(val<low)flags.push({label,val,unit,status:'low',ref:`${low}–${high}`});
+    else if(val>high)flags.push({label,val,unit,status:'high',ref:`${low}–${high}`});
+    else flags.push({label,val,unit,status:'normal',ref:`${low}–${high}`});
+  };
+  if(!isNaN(microalb)){
+    const mStatus=microalb<20?'normal':microalb<200?'high':'high';
+    flags.push({label:'Urine Microalbumin',val:microalb,unit:'mg/L',status:mStatus,ref:'<20'});
+  }
+  if(!isNaN(uacr)){
+    const uStatus=uacr<30?'normal':uacr<300?'high':'high';
+    flags.push({label:'UACR',val:uacr,unit:'mg/g',status:uStatus,ref:'<30'});
+  }
+  if(dipstick){
+    const dStatus=dipstick==='neg'?'normal':'high';
+    flags.push({label:'Urine Dipstick',val:dipstick==='neg'?'Negative':'Positive '+dipstick,unit:'',status:dStatus,ref:'Negative'});
+  }
+  flag('Creatinine',cr,isFem?0.51:0.67,isFem?0.9:1.17,'mg/dL');
   const isFem=sex===0;
   const flags=[];
   const flag=(label,val,low,high,unit)=>{
@@ -1099,6 +1219,7 @@ function calcCKD(){
   document.getElementById('lab-flags').innerHTML=labHtml;
 
   const res={eGFR,gStage:g,aStage:av,risk,
+    dipstick:dipstick||null,
     uacr:isNaN(uacr)?null:uacr,
     microalb:isNaN(microalb)?null:microalb,
     k:isNaN(k)?null:k,
@@ -1151,11 +1272,51 @@ function renderCKDHist(){
 function saveSM(){
   const pid=parseInt(document.getElementById('sm-pt').value);
   if(!pid)return toast('เลือกผู้ป่วยก่อน','error');
-  const rec={id:DB.nid('sm'),patientId:pid,date:document.getElementById('sm-date').value,sbp:document.getElementById('sm-sbp').value,dbp:document.getElementById('sm-dbp').value,wt:document.getElementById('sm-wt').value,hr:document.getElementById('sm-hr').value,bx:[1,2,3,4,5,6].map(i=>document.getElementById('bx'+i).checked),note:document.getElementById('sm-note').value,at:new Date().toISOString()};
+  
+  const sbpStr=document.getElementById('sm-sbp').value;
+  const dbpStr=document.getElementById('sm-dbp').value;
+  const wtStr=document.getElementById('sm-wt').value;
+  const hrStr=document.getElementById('sm-hr').value;
+  
+  // ตรวจสอบความถูกต้องของข้อมูล (Input Validation)
+  const sbp=parseInt(sbpStr);
+  const dbp=parseInt(dbpStr);
+  if(isNaN(sbp) || sbp <= 0) return toast('กรุณากรอกค่าความดันตัวบน (Systolic) ที่มากกว่า 0','error');
+  if(isNaN(dbp) || dbp <= 0) return toast('กรุณากรอกค่าความดันตัวล่าง (Diastolic) ที่มากกว่า 0','error');
+  
+  const rec={id:DB.nid('sm'),patientId:pid,date:document.getElementById('sm-date').value,sbp:sbpStr,dbp:dbpStr,wt:wtStr,hr:hrStr,bx:[1,2,3,4,5,6].map(i=>document.getElementById('bx'+i).checked),note:document.getElementById('sm-note').value,at:new Date().toISOString()};
   const recs=DB.get('sm');recs.push(rec);DB.set('sm',recs);
   [1,2,3,4,5,6].forEach(i=>document.getElementById('bx'+i).checked=false);
   document.getElementById('sm-note').value='';
   toast('บันทึกข้อมูลวันนี้แล้ว');renderSMHist();renderBPChart();
+  
+  // แจ้งเตือนความดันโลหิตสูงวิกฤต (Hypertensive Crisis Check)
+  if(sbp >= 180 || dbp >= 120){
+    showEmergencyModal(sbp, dbp);
+  }
+}
+
+function showEmergencyModal(sbp, dbp) {
+  // ลบ modal เก่าถ้ามีค้างอยู่
+  const existing = document.getElementById('emergency-modal');
+  if(existing) existing.remove();
+  
+  const modalHtml = `
+    <div class="modal active" id="emergency-modal" style="z-index:9999; display:flex; align-items:center; justify-content:center; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(15,23,42,0.65); backdrop-filter:blur(4px);">
+      <div class="modal-content" style="background:var(--white); border-radius:12px; padding:24px; border-top:8px solid var(--rose-600); max-width:400px; width:90%; text-align:center; box-shadow:0 20px 25px -5px rgba(0,0,0,0.15);">
+        <div style="font-size:48px; margin-bottom:12px; display:inline-block; animation: pulse 0.8s infinite alternate;">🚨</div>
+        <h3 style="color:var(--rose-600); margin-bottom:8px; font-size:17.5px; font-weight:700;">แจ้งเตือน: ความดันสูงวิกฤต! (Hypertensive Crisis)</h3>
+        <p style="font-size:24px; font-weight:800; margin-bottom:14px; font-family:var(--mono); color:var(--rose-600);">${sbp}/${dbp} <span style="font-size:14px; font-weight:500;">mmHg</span></p>
+        <p style="font-size:13.5px; color:var(--text2); margin-bottom:20px; text-align:left; line-height:1.5;">
+          <strong>คำแนะนำฉุกเฉินและเร่งด่วน:</strong>
+          <br>1. ให้คนไข้นั่งพักนิ่งๆ ในท่านั่งที่สบาย ในจุดที่อากาศถ่ายเทสะดวก 5-10 นาทีแล้วทำการวัดซ้ำ
+          <br>2. <strong>หากวัดซ้ำแล้วยังสูงอยู่ หรือคนไข้มีอาการผิดปกติร่วมด้วย</strong> เช่น ปวดศีรษะอย่างรุนแรง ตาพร่ามัวฉับพลัน เจ็บแน่นหน้าอก หายใจหอบเหนื่อย แขนขาอ่อนแรงข้างใดข้างหนึ่ง หรือพูดติดขัด <strong>ให้รีบนำส่งห้องฉุกเฉินหรือโทรเรียกสายด่วน 1669 ของ อบจ.ชลบุรี หรือโรงพยาบาลใกล้ที่สุดทันที!</strong>
+        </p>
+        <button class="btn btn-danger" onclick="document.getElementById('emergency-modal').remove()" style="width:100%; background:var(--rose-600); color:#fff; border:none; padding:10px; border-radius:6px; font-weight:700; cursor:pointer;">รับทราบคำแนะนำและจะปฏิบัติตาม</button>
+      </div>
+    </div>
+  `;
+  document.body.insertAdjacentHTML('beforeend', modalHtml);
 }
 function renderSMHist(){
   const pid=parseInt(document.getElementById('sm-pt').value);
@@ -1178,12 +1339,35 @@ function renderBPChart(){
   if(!pid){el.innerHTML='<div class="text-xs text-muted" style="padding:20px 0">เลือกผู้ป่วยเพื่อดูกราฟ</div>';return;}
   const recs=DB.get('sm').filter(r=>r.patientId===pid&&r.sbp).slice(-7);
   if(!recs.length){el.innerHTML='<div class="text-xs text-muted" style="padding:20px 0">ยังไม่มีข้อมูลความดัน</div>';return;}
-  const maxV=Math.max(...recs.map(r=>parseInt(r.sbp)||0),160);
+  
+  // คำนวณขีดจำกัดสูงสุดจากทั้ง SBP และ DBP (ค่าสูงสุด หรือค่าเริ่มต้น 160)
+  const maxV=Math.max(...recs.map(r=>Math.max(parseInt(r.sbp)||0, parseInt(r.dbp)||0)),160);
   const H=80;
+  
   el.innerHTML=recs.map(r=>{
-    const v=parseInt(r.sbp)||0;const h=Math.max(6,Math.round(v/maxV*H));
-    const cl=v>=140?'b-ht':v>=120?'b-pre':'b-normal';
-    return `<div class="bar-chart-bar ${cl}" style="height:${h}px" title="${r.sbp}/${r.dbp} · ${r.date}"><span class="b-val">${v}</span><span class="b-lbl">${(r.date||'').slice(5)}</span></div>`;
+    const sbp=parseInt(r.sbp)||0;
+    const dbp=parseInt(r.dbp)||0;
+    
+    const hS=Math.max(6,Math.round(sbp/maxV*H));
+    const hD=Math.max(6,Math.round(dbp/maxV*H));
+    
+    const clS=sbp>=140?'b-ht':sbp>=120?'b-pre':'b-normal';
+    const clD=dbp>=90?'b-dbp-ht':dbp>=80?'b-dbp-pre':'b-dbp-normal';
+    
+    return `
+      <div class="bar-group" style="flex:1; display:flex; align-items:flex-end; gap:3px; height:100%; position:relative; justify-content:center; padding-bottom:22px;">
+        <!-- แท่งความดันตัวบน (Systolic) -->
+        <div class="bar-chart-bar ${clS}" style="height:${hS}px; width:12px; border-radius:3px 3px 0 0;" title="Systolic (ตัวบน): ${sbp} mmHg · วันที่ ${r.date}">
+          <span class="b-val" style="font-size:8.5px; top:-16px;">${sbp}</span>
+        </div>
+        <!-- แท่งความดันตัวล่าง (Diastolic) -->
+        <div class="bar-chart-bar-dbp ${clD}" style="height:${hD}px; width:8px; border-radius:2px 2px 0 0;" title="Diastolic (ตัวล่าง): ${dbp} mmHg · วันที่ ${r.date}">
+          <span class="b-val" style="font-size:7.5px; top:-12px;">${dbp}</span>
+        </div>
+        <!-- ป้ายกำกับวันที่ -->
+        <span class="b-lbl" style="position:absolute; bottom:2px; left:50%; transform:translateX(-50%); font-size:9px; color:var(--slate-300); white-space:nowrap;">${(r.date||'').slice(5)}</span>
+      </div>
+    `;
   }).join('');
 }
 
@@ -1435,7 +1619,14 @@ function processImportFile(file) {
   reader.onload = (e) => {
     try {
       const data = JSON.parse(e.target.result);
-      if (!data.patients) throw new Error('ไฟล์ไม่ถูกต้อง');
+      
+      // การตรวจเช็คโครงสร้างไฟล์ความปลอดภัย (JSON Schema Integrity Verification)
+      const requiredKeys = ['patients', 'ckd-hist', 'sm', 'appointments', 'refer'];
+      const hasAllKeys = requiredKeys.every(key => key in data && Array.isArray(data[key]));
+      if (!hasAllKeys) {
+        throw new Error('โครงสร้างข้อมูลระบบ NCD Care Hub ไม่ถูกต้อง');
+      }
+      
       _importData = data;
 
       const meta = data._meta || {};
