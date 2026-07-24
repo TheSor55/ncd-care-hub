@@ -1621,12 +1621,18 @@ function processImportFile(file) {
     try {
       const data = JSON.parse(e.target.result);
       
-      // การตรวจเช็คโครงสร้างไฟล์ความปลอดภัย (JSON Schema Integrity Verification)
-      const requiredKeys = ['patients', 'ckd-hist', 'sm', 'appointments', 'refer'];
-      const hasAllKeys = requiredKeys.every(key => key in data && Array.isArray(data[key]));
-      if (!hasAllKeys) {
-        throw new Error('โครงสร้างข้อมูลระบบ NCD Care Hub ไม่ถูกต้อง');
+      // การตรวจเช็คโครงสร้างไฟล์ (รองรับไฟล์ backup เก่าและใหม่)
+      // ต้องมีอย่างน้อย key 'patients' เป็น Array (key อื่นๆ optional)
+      if (!data || typeof data !== 'object' || !Array.isArray(data.patients)) {
+        throw new Error('โครงสร้างข้อมูลไม่ถูกต้อง: ไม่พบรายการผู้ป่วย (patients)');
       }
+      // normalize key ชื่อเก่า → ใหม่ (refer → referrals และ referrals → refer)
+      if (!data['refer'] && Array.isArray(data['referrals'])) data['refer'] = data['referrals'];
+      if (!data['referrals'] && Array.isArray(data['refer'])) data['referrals'] = data['refer'];
+      // ตั้งค่า default สำหรับ key ที่ขาดหายไปในไฟล์เก่า
+      ['ckd-hist','sm','appointments','refer','referrals'].forEach(k => {
+        if (!Array.isArray(data[k])) data[k] = [];
+      });
       
       _importData = data;
 
