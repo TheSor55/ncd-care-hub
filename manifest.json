@@ -11,30 +11,10 @@
   "lang": "th",
   "icons": [
     {
-      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect width='192' height='192' rx='24' fill='%230A0E1A'/><text y='140' x='20' font-size='140'>⚕️</text></svg>",
-      "sizes": "192x192",
+      "src": "icon.svg",
+      "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any maskable"
-    },
-    {
-      "src": "icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any maskable"
-    }
-  ],
-  "screenshots": [
-    {
-      "src": "screenshot-dashboard.png",
-      "sizes": "1280x720",
-      "type": "image/png",
-      "label": "Dashboard ภาพรวมผู้ป่วย NCD"
     }
   ],
   "categories": ["health", "medical", "productivity"],
@@ -44,14 +24,14 @@
       "short_name": "ผู้ป่วย",
       "description": "ดูรายชื่อผู้ป่วยทั้งหมด",
       "url": "/#patient-list",
-      "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
+      "icons": [{ "src": "icon.svg", "sizes": "any" }]
     },
     {
       "name": "คัดกรอง CKD",
       "short_name": "CKD",
       "description": "บันทึกผลการคัดกรองไต",
       "url": "/#ckd",
-      "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
+      "icons": [{ "src": "icon.svg", "sizes": "any" }]
     }
   ]
 }
