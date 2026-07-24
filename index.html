@@ -473,6 +473,10 @@ body{font-family:var(--font);background:var(--canvas);color:var(--ink-800);line-
         <div class="card-head">
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
             <div class="search-wrap"><input class="form-input" id="pt-search" placeholder="ค้นหาชื่อ หรือ HN…" oninput="renderPtTable()" style="width:220px"></div>
+            <button class="btn btn-secondary" onclick="openExcelImportModal()" style="display:flex;align-items:center;gap:6px;border-color:var(--slate-200);background:var(--white);color:var(--slate-700)">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              นำเข้า JHCIS/HOSxP
+            </button>
             <select class="form-input form-select" id="pt-sort" onchange="renderPtTable()" style="width:160px">
               <option value="name-asc">ชื่อ ก→ฮ</option>
               <option value="name-desc">ชื่อ ฮ→ก</option>
@@ -1683,6 +1687,428 @@ function confirmImport() {
   refreshAll();
 }
 
+
+// ─── JHCIS/HOSxP EXCEL/CSV IMPORT SYSTEM ───
+let _excelImportData = [];
+let _excelMapping = {};
+
+function openExcelImportModal() {
+  if (!window.XLSX) {
+    toast('กำลังโหลดไลบรารีวิเคราะห์ Excel...', 'warning');
+    const script = document.createElement('script');
+    script.src = "https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.mini.min.js";
+    script.onload = () => {
+      toast('โหลดไลบรารีสำเร็จ พร้อมใช้งาน', 'success');
+      showModal();
+    };
+    script.onerror = () => {
+      toast('ไม่สามารถโหลดไลบรารีออนไลน์ได้ จะรองรับเฉพาะไฟล์ .csv เท่านั้น', 'error');
+      showModal();
+    };
+    document.head.appendChild(script);
+  } else {
+    showModal();
+  }
+
+  function showModal() {
+    const modal = document.getElementById('excel-import-modal');
+    modal.style.display = 'flex';
+    document.getElementById('excel-file-input').value = '';
+    document.getElementById('excel-preview-area').style.display = 'none';
+    document.getElementById('excel-confirm-btn').style.display = 'none';
+    _excelImportData = [];
+    _excelMapping = {};
+  }
+}
+
+function closeExcelImportModal() {
+  document.getElementById('excel-import-modal').style.display = 'none';
+}
+
+function handleExcelUpload(input) {
+  const file = input.files[0];
+  if (!file) return;
+  
+  const reader = new FileReader();
+  
+  if (file.name.endsWith('.csv')) {
+    reader.onload = function(e) {
+      try {
+        const text = e.target.result;
+        parseCSVText(text);
+      } catch (err) {
+        toast('เกิดข้อผิดพลาดในการอ่านไฟล์ CSV', 'error');
+      }
+    };
+    reader.readAsText(file, 'utf-8');
+  } else {
+    if (!window.XLSX) {
+      return toast('กรุณาใช้ไฟล์ .csv หรือเชื่อมต่ออินเทอร์เน็ตเพื่อโหลดตัวอ่าน Excel', 'error');
+    }
+    reader.onload = function(e) {
+      try {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, {type: 'array'});
+        const firstSheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[firstSheetName];
+        const rows = XLSX.utils.sheet_to_json(worksheet, {header: 1, defval: ""});
+        processImportRows(rows);
+      } catch (err) {
+        toast('เกิดข้อผิดพลาดในการวิเคราะห์ไฟล์ Excel', 'error');
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  }
+}
+
+function parseCSVText(text) {
+  const lines = text.split('\n');
+  if (lines.length === 0) return toast('ไฟล์ว่างเปล่า', 'error');
+  
+  let delimiter = ',';
+  const firstLine = lines[0];
+  if (firstLine.includes(';')) delimiter = ';';
+  else if (firstLine.includes('\t')) delimiter = '\t';
+  
+  const rows = lines.map(line => {
+    let arr = [];
+    let insideQuote = false;
+    let entry = "";
+    for (let i = 0; i < line.length; i++) {
+      let char = line[i];
+      if (char === '"') {
+        insideQuote = !insideQuote;
+      } else if (char === delimiter && !insideQuote) {
+        arr.push(entry.trim());
+        entry = "";
+      } else {
+        entry += char;
+      }
+    }
+    arr.push(entry.trim());
+    return arr;
+  }).filter(row => row.length > 0 && row.some(cell => cell !== ""));
+  
+  processImportRows(rows);
+}
+
+def processImportRows(rows) {
+  if (rows.length < 2) return toast('ไฟล์ต้องมีแถวหัวข้อและข้อมูลผู้ป่วยอย่างน้อย 1 แถว', 'error');
+  
+  const headers = rows[0].map(h => String(h || '').trim().toLowerCase());
+  
+  const mappingKeys = {
+    hn: ['hn', 'h.n', 'เลขผู้ป่วย', 'เลขประจำตัว', 'id', 'pid', 'เลขบัตร', 'เลขประจำตัวผู้ป่วย'],
+    name: ['name', 'ชื่อ', 'ชื่อ-สกุล', 'ชื่อสกุล', 'ชื่อเต็ม', 'fullname', 'ผู้ป่วย', 'ชื่อคนไข้'],
+    dob: ['birth', 'dob', 'วันเกิด', 'วันเดือนปีเกิด', 'birthdate', 'birth_date', 'ปีเกิด', 'วดปเกิด'],
+    sex: ['sex', 'gender', 'เพศ'],
+    phone: ['phone', 'tel', 'เบอร์โทร', 'เบอร์โทรศัพท์', 'โทร', 'contact', 'เบอร์'],
+    cr: ['cr', 'creatinine', 'ค่าไต', 'ครีอะตินีน', 'creatinine_value'],
+    uacr: ['uacr', 'microalb', 'albumin', 'โปรตีนในปัสสาวะ', 'uacr_value', 'microalbumin'],
+    fbs: ['fbs', 'glucose', 'sugar', 'น้ำตาล', 'fbs_value', 'น้ำตาลในเลือด'],
+    sbp: ['sbp', 'systolic', 'ความดันบน', 'ความดันโลหิตตัวบน', 'bp_systolic'],
+    dbp: ['dbp', 'diastolic', 'ความดันล่าง', 'ความดันโลหิตตัวล่าง', 'bp_diastolic']
+  };
+  
+  _excelMapping = {};
+  for (const [key, keywords] of Object.entries(mappingKeys)) {
+    const idx = headers.findIndex(h => keywords.some(kw => h.includes(kw)));
+    _excelMapping[key] = idx;
+  }
+  
+  if (_excelMapping.hn === -1 || _excelMapping.name === -1) {
+    return toast('ไม่พบช่องข้อมูลที่สแกนเป็น HN หรือ ชื่อ-สกุล ในแถวแรกของไฟล์ กรุณาตรวจสอบหัวข้อตาราง', 'error');
+  }
+  
+  const statusEl = document.getElementById('excel-mapping-status');
+  const labels = {hn:'HN', name:'ชื่อ-สกุล', dob:'วันเกิด', sex:'เพศ', phone:'เบอร์โทร', cr:'Creatinine', uacr:'UACR/Microalb', fbs:'FBS น้ำตาล', sbp:'ความดันบน', dbp:'ความดันล่าง'};
+  
+  statusEl.innerHTML = Object.entries(_excelMapping).map(([key, idx]) => {
+    const found = idx !== -1;
+    const color = found ? 'var(--teal-600)' : 'var(--slate-400)';
+    const bg = found ? 'var(--teal-50)' : 'var(--slate-50)';
+    const text = found ? `✓ ${headers[idx]}` : '✕ ไม่พบ';
+    return `<div style="padding:6px; background:${bg}; border-radius:4px; border:1px solid ${found?'var(--teal-100)':'var(--slate-100)'}; color:${color}">
+      <strong>${labels[key]}:</strong> <span style="font-family:var(--mono); font-size:11px">${text}</span>
+    </div>`;
+  }).join('');
+  
+  _excelImportData = [];
+  for (let i = 1; i < rows.length; i++) {
+    const row = rows[i];
+    if (row.length === 0 || !row[_excelMapping.hn]) continue;
+    
+    const hn = String(row[_excelMapping.hn]).trim();
+    const name = String(row[_excelMapping.name]).trim();
+    if (!hn || !name) continue;
+    
+    let dob = "";
+    if (_excelMapping.dob !== -1 && row[_excelMapping.dob]) {
+      dob = parseThaiDate(row[_excelMapping.dob]);
+    }
+    
+    let sex = "หญิง";
+    if (_excelMapping.sex !== -1 && row[_excelMapping.sex]) {
+      const sVal = String(row[_excelMapping.sex]).trim().toLowerCase();
+      if (sVal === 'ชาย' || sVal === '1' || sVal === 'm' || sVal === 'male') {
+        sex = 'ชาย';
+      }
+    }
+    
+    const pt = {
+      hn: hn,
+      name: name,
+      sex: sex,
+      dob: dob,
+      phone: _excelMapping.phone !== -1 ? String(row[_excelMapping.phone] || '').trim() : "",
+      cr: _excelMapping.cr !== -1 ? parseFloat(row[_excelMapping.cr]) : NaN,
+      uacr: _excelMapping.uacr !== -1 ? parseFloat(row[_excelMapping.uacr]) : NaN,
+      fbs: _excelMapping.fbs !== -1 ? parseFloat(row[_excelMapping.fbs]) : NaN,
+      sbp: _excelMapping.sbp !== -1 ? parseInt(row[_excelMapping.sbp]) : NaN,
+      dbp: _excelMapping.dbp !== -1 ? parseInt(row[_excelMapping.dbp]) : NaN
+    };
+    _excelImportData.push(pt);
+  }
+  
+  if (_excelImportData.length === 0) {
+    return toast('ไม่พบแถวข้อมูลผู้ป่วยที่ถูกต้องในไฟล์', 'error');
+  }
+  
+  const tbody = document.querySelector('#excel-preview-table tbody');
+  tbody.innerHTML = _excelImportData.slice(0, 5).map(pt => {
+    return `<tr style="border-bottom:1px solid var(--slate-50)">
+      <td style="padding:8px 10px; font-family:var(--mono)">${pt.hn}</td>
+      <td style="padding:8px 10px; font-weight:600">${pt.name}</td>
+      <td style="padding:8px 10px">${pt.sex}</td>
+      <td style="padding:8px 10px">${pt.dob || '–'}</td>
+      <td style="padding:8px 10px">${pt.phone || '–'}</td>
+      <td style="padding:8px 10px; font-family:var(--mono)">${isNaN(pt.cr)?'–':pt.cr}</td>
+      <td style="padding:8px 10px; font-family:var(--mono)">${isNaN(pt.uacr)?'–':pt.uacr}</td>
+      <td style="padding:8px 10px; font-family:var(--mono)">${isNaN(pt.fbs)?'–':pt.fbs}</td>
+      <td style="padding:8px 10px; font-family:var(--mono)">${(isNaN(pt.sbp)||isNaN(pt.dbp))?'–':(pt.sbp+'/'+pt.dbp)}</td>
+    </tr>`;
+  }).join('');
+  
+  document.getElementById('excel-preview-area').style.display = 'block';
+  
+  const summaryEl = document.getElementById('excel-summary-text');
+  summaryEl.textContent = `📋 ตรวจพบข้อมูลสมบูรณ์พร้อมนำเข้าทั้งหมด ${_excelImportData.length} รายการ`;
+  
+  document.getElementById('excel-confirm-btn').style.display = 'block';
+}
+
+function parseThaiDate(val) {
+  if (!val) return "";
+  
+  if (typeof val === 'number') {
+    const d = new Date((val - 25569) * 86400 * 1000);
+    let y = d.getFullYear();
+    if (y > 2400) y -= 543;
+    return y + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+  }
+  
+  const str = String(val).trim();
+  let match = str.match(/^(\\d{4})[-/](\\d{1,2})[-/](\\d{1,2})$/);
+  if (match) {
+    let y = parseInt(match[1]);
+    if (y > 2400) y -= 543;
+    return y + '-' + String(match[2]).padStart(2,'0') + '-' + String(match[3]).padStart(2,'0');
+  }
+  
+  match = str.match(/^(\\d{1,2})[-/](\\d{1,2})[-/](\\d{4})$/);
+  if (match) {
+    let y = parseInt(match[3]);
+    if (y > 2400) y -= 543;
+    return y + '-' + String(match[2]).padStart(2,'0') + '-' + String(match[1]).padStart(2,'0');
+  }
+  
+  return "";
+}
+
+function confirmExcelImport() {
+  if (_excelImportData.length === 0) return;
+  
+  const pts = DB.get('patients');
+  let newCount = 0;
+  let updateCount = 0;
+  let calcCount = 0;
+  let smCount = 0;
+  
+  const ckdHist = DB.get('ckd-hist');
+  const smHist = DB.get('sm');
+  
+  _excelImportData.forEach(pt => {
+    let pIdx = pts.findIndex(x => x.hn === pt.hn);
+    let patientId = 0;
+    
+    const ptProfile = {
+      hn: pt.hn,
+      name: pt.name,
+      sex: pt.sex,
+      dob: pt.dob || (pIdx !== -1 ? pts[pIdx].dob : ""),
+      phone: pt.phone || (pIdx !== -1 ? pts[pIdx].phone : ""),
+      disease: pIdx !== -1 ? pts[pIdx].disease : "กลุ่มเสี่ยง HT (Pre-HT)",
+      med: pIdx !== -1 ? pts[pIdx].med : "",
+      wt: pIdx !== -1 ? pts[pIdx].wt : "",
+      ht: pIdx !== -1 ? pts[pIdx].ht : "",
+      waist: pIdx !== -1 ? pts[pIdx].waist : "",
+      sbp: !isNaN(pt.sbp) ? String(pt.sbp) : (pIdx !== -1 ? pts[pIdx].sbp : ""),
+      dbp: !isNaN(pt.dbp) ? String(pt.dbp) : (pIdx !== -1 ? pts[pIdx].dbp : ""),
+      note: pIdx !== -1 ? pts[pIdx].note : "นำเข้าจากระบบ Excel",
+      ckdResult: pIdx !== -1 ? pts[pIdx].ckdResult : null,
+      referred: pIdx !== -1 ? pts[pIdx].referred : false,
+      createdAt: pIdx !== -1 ? pts[pIdx].createdAt : new Date().toISOString()
+    };
+    
+    if (pIdx !== -1) {
+      patientId = pts[pIdx].id;
+      ptProfile.id = patientId;
+      pts[pIdx] = ptProfile;
+      updateCount++;
+    } else {
+      patientId = DB.nid('patients') + newCount;
+      ptProfile.id = patientId;
+      pts.push(ptProfile);
+      newCount++;
+    }
+    
+    if (!isNaN(pt.cr) && pt.cr > 0 && ptProfile.dob) {
+      const age = calcAgeFromDob(ptProfile.dob);
+      if (age && age > 0) {
+        const sexVal = ptProfile.sex === 'ชาย' ? 1 : 0;
+        const kk = sexVal === 1 ? 0.9 : 0.7;
+        const a = sexVal === 1 ? -0.302 : -0.241;
+        const sf = sexVal === 1 ? 1.0 : 1.012;
+        const ck = pt.cr / kk;
+        const eGFR = +(142 * Math.pow(Math.min(ck, 1), a) * Math.pow(Math.max(ck, 1), -1.2) * Math.pow(0.9938, age) * sf).toFixed(1);
+        
+        let g = eGFR >= 90 ? 'G1' : eGFR >= 60 ? 'G2' : eGFR >= 45 ? 'G3a' : eGFR >= 30 ? 'G3b' : eGFR >= 15 ? 'G4' : 'G5';
+        
+        let av = 'A1';
+        if (!isNaN(pt.uacr)) {
+          av = pt.uacr >= 300 ? 'A3' : pt.uacr >= 30 ? 'A2' : 'A1';
+        }
+        
+        const rm = {
+          G1:{A1:'ต่ำ',A2:'ปานกลาง',A3:'สูง'},
+          G2:{A1:'ต่ำ',A2:'ปานกลาง',A3:'สูง'},
+          G3a:{A1:'ปานกลาง',A2:'สูง',A3:'สูงมาก'},
+          G3b:{A1:'สูง',A2:'สูงมาก',A3:'สูงมาก'},
+          G4:{A1:'สูงมาก',A2:'สูงมาก',A3:'สูงมาก'},
+          G5:{A1:'ไตวาย',A2:'ไตวาย',A3:'ไตวาย'}
+        };
+        const risk = rm[g][av];
+        
+        const ckdResult = {
+          eGFR: eGFR,
+          gStage: g,
+          aStage: av,
+          risk: risk,
+          uacr: isNaN(pt.uacr) ? null : pt.uacr,
+          microalb: null,
+          dipstick: null,
+          k: null,
+          fbs: isNaN(pt.fbs) ? null : pt.fbs,
+          hba1c: null,
+          ast: null,
+          alt: null,
+          chol: null,
+          tg: null,
+          hdl: null,
+          ldl: null,
+          date: new Date().toISOString().slice(0, 10)
+        };
+        
+        ptProfile.ckdResult = ckdResult;
+        
+        ckdHist.push({
+          id: DB.nid('ckd-hist') + calcCount,
+          patientId: patientId,
+          ...ckdResult,
+          at: new Date().toISOString()
+        });
+        
+        calcCount++;
+      }
+    }
+    
+    if (!isNaN(pt.sbp) && !isNaN(pt.dbp) && pt.sbp > 0 && pt.dbp > 0) {
+      smHist.push({
+        id: DB.nid('sm') + smCount,
+        patientId: patientId,
+        date: new Date().toISOString().slice(0, 10),
+        sbp: String(pt.sbp),
+        dbp: String(pt.dbp),
+        wt: "",
+        hr: "",
+        bx: [false, false, false, false, false, false],
+        note: "นำเข้าจากระบบหลัก รพ.สต.",
+        at: new Date().toISOString()
+      });
+      smCount++;
+    }
+  });
+  
+  DB.set('patients', pts);
+  if (calcCount > 0) DB.set('ckd-hist', ckdHist);
+  if (smCount > 0) DB.set('sm', smHist);
+  
+  toast(`นำเข้าสำเร็จ: คนใหม่ ${newCount} ราย, อัปเดตคนเดิม ${updateCount} ราย, ประเมินค่าไต ${calcCount} ราย`, 'success');
+  closeExcelImportModal();
+  refreshAll();
+}
 </script>
+  <!-- ─── EXCEL/CSV IMPORT MODAL ─── -->
+  <div class="modal-bg" id="excel-import-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(15,23,42,0.6); backdrop-filter:blur(4px); z-index:2000; align-items:center; justify-content:center;">
+    <div class="modal-content" style="background:var(--white); border-radius:12px; padding:24px; max-width:800px; width:92%; box-shadow:0 20px 25px -5px rgba(0,0,0,0.15); display:flex; flex-direction:column; max-height:85vh;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <h3 style="margin:0; font-size:17.5px; font-weight:700; color:var(--ink-800)">นำเข้าข้อมูลผู้ป่วยจาก Excel / CSV (JHCIS / HOSxP)</h3>
+        <button onclick="closeExcelImportModal()" style="background:none; border:none; font-size:20px; color:var(--slate-400); cursor:pointer; padding:4px;">✕</button>
+      </div>
+      
+      <!-- Upload area -->
+      <div id="excel-drop-zone" onclick="document.getElementById('excel-file-input').click()" style="border:2px dashed var(--blue-200); border-radius:8px; padding:32px 16px; text-align:center; cursor:pointer; background:var(--canvas); transition:all 0.2s ease-in-out;">
+        <div style="font-size:36px; margin-bottom:8px">📊</div>
+        <div style="font-size:14px; font-weight:600; color:var(--blue-600)">คลิก หรือเลือกไฟล์ Excel/CSV จากเครื่อง</div>
+        <div style="font-size:11.5px; color:var(--slate-300); margin-top:4px">รองรับไฟล์สกุล .xlsx, .xls, .csv ที่ส่งออกจากระบบรายงาน JHCIS/HOSxP</div>
+        <input type="file" id="excel-file-input" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleExcelUpload(this)">
+      </div>
+
+      <!-- Preview section -->
+      <div id="excel-preview-area" style="display:none; flex:1; overflow-y:auto; margin-top:16px;">
+        <div style="font-size:12px; font-weight:700; color:var(--slate-400); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px;">การตรวจพบหัวตารางคอลัมน์ (Auto Column Mapping)</div>
+        <div id="excel-mapping-status" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap:6px; margin-bottom:16px; padding:10px; background:var(--canvas); border-radius:6px; border:1px solid var(--slate-100); font-size:12px;"></div>
+        
+        <div style="font-size:12px; font-weight:700; color:var(--slate-400); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px;">ตัวอย่างข้อมูลคนไข้ที่จะนำเข้า (5 รายแรก)</div>
+        <div style="overflow-x:auto; border:1px solid var(--slate-100); border-radius:6px; margin-bottom:12px;">
+          <table style="width:100%; border-collapse:collapse; font-size:11.5px; text-align:left;" id="excel-preview-table">
+            <thead>
+              <tr style="background:var(--canvas); border-bottom:1px solid var(--slate-100);">
+                <th style="padding:8px 10px; font-weight:600;">HN</th>
+                <th style="padding:8px 10px; font-weight:600;">ชื่อ-สกุล</th>
+                <th style="padding:8px 10px; font-weight:600;">เพศ</th>
+                <th style="padding:8px 10px; font-weight:600;">วันเกิด</th>
+                <th style="padding:8px 10px; font-weight:600;">เบอร์โทร</th>
+                <th style="padding:8px 10px; font-weight:600; font-family:var(--mono);">Creatinine</th>
+                <th style="padding:8px 10px; font-weight:600; font-family:var(--mono);">UACR</th>
+                <th style="padding:8px 10px; font-weight:600; font-family:var(--mono);">FBS</th>
+                <th style="padding:8px 10px; font-weight:600; font-family:var(--mono);">BP ล่าสุด</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        
+        <div id="excel-summary-text" style="font-size:12.5px; color:var(--teal-600); font-weight:600; padding:4px 0 12px 0;"></div>
+      </div>
+
+      <!-- Action buttons -->
+      <div style="display:flex; gap:10px; margin-top:16px;">
+        <button class="btn btn-secondary" onclick="closeExcelImportModal()" style="flex:1">ยกเลิก</button>
+        <button class="btn btn-primary" id="excel-confirm-btn" onclick="confirmExcelImport()" style="flex:1; display:none; background:var(--blue-600)">ยืนยันนำเข้าข้อมูล</button>
+      </div>
+    </div>
+  </div>
+
 </body>
 </html>
