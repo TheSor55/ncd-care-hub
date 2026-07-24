@@ -1792,7 +1792,7 @@ function parseCSVText(text) {
   processImportRows(rows);
 }
 
-def processImportRows(rows) {
+function processImportRows(rows) {
   if (rows.length < 2) return toast('ไฟล์ต้องมีแถวหัวข้อและข้อมูลผู้ป่วยอย่างน้อย 1 แถว', 'error');
   
   const headers = rows[0].map(h => String(h || '').trim().toLowerCase());
