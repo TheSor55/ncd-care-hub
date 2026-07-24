@@ -1178,23 +1178,7 @@ function calcCKD(){
     flags.push({label:'Urine Dipstick',val:dipstick==='neg'?'Negative':'Positive '+dipstick,unit:'',status:dStatus,ref:'Negative'});
   }
   flag('Creatinine',cr,isFem?0.51:0.67,isFem?0.9:1.17,'mg/dL');
-  const isFem=sex===0;
-  const flags=[];
-  const flag=(label,val,low,high,unit)=>{
-    if(isNaN(val))return;
-    if(val<low)flags.push({label,val,unit,status:'low',ref:`${low}–${high}`});
-    else if(val>high)flags.push({label,val,unit,status:'high',ref:`${low}–${high}`});
-    else flags.push({label,val,unit,status:'normal',ref:`${low}–${high}`});
-  };
-  if(!isNaN(microalb)){
-    const mStatus=microalb<20?'normal':microalb<200?'high':'high';
-    flags.push({label:'Urine Microalbumin',val:microalb,unit:'mg/L',status:mStatus,ref:'<20'});
-  }
-  if(!isNaN(uacr)){
-    const uStatus=uacr<30?'normal':uacr<300?'high':'high';
-    flags.push({label:'UACR',val:uacr,unit:'mg/g',status:uStatus,ref:'<30'});
-  }
-  flag('Creatinine',cr,isFem?0.51:0.67,isFem?0.9:1.17,'mg/dL');
+
   flag('K (Potassium)',k,3.4,4.5,'mmol/L');
   flag('FBS',fbs,74,99,'mg/dL');
   if(!isNaN(hba1c)){const hs=hba1c<=5.9?'normal':hba1c<=6.4?'high':'high';flags.push({label:'HbA1C',val:hba1c,unit:'%',status:hs,ref:'4.8–5.9'});}
