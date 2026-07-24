@@ -3,10 +3,56 @@
 <head>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚕️</text></svg>">
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>NCD Care Hub</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>NCD Care Hub — ระบบดูแลผู้ป่วย NCD & CKD รพ.สต. ชลบุรี</title>
+
+<!-- ── SEO Meta Tags ── -->
+<meta name="description" content="NCD Care Hub ระบบดิจิทัลสำหรับพยาบาลวิชาชีพ รพ.สต. ในการดูแลผู้ป่วยโรคไม่ติดต่อเรื้อรัง (NCD) และโรคไตเรื้อรัง (CKD) พร้อม eGFR staging, การนำเข้าข้อมูล JHCIS/HOSxP และใช้งานออฟไลน์ได้">
+<meta name="keywords" content="NCD, CKD, ไตเรื้อรัง, โรคไม่ติดต่อ, eGFR, รพ.สต., ชลบุรี, พยาบาล, ระบบสุขภาพ, JHCIS, HOSxP">
+<meta name="author" content="ธัญชนก สุวรรณรงค์ — รพ.สต.หนองค้อ อ.ศรีราชา จ.ชลบุรี">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#12A08A">
+
+<!-- ── Open Graph (Facebook / Line / Messenger) ── -->
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://ncd.futuregreennet.com/">
+<meta property="og:title" content="NCD Care Hub — ระบบดูแลผู้ป่วย NCD & CKD รพ.สต. ชลบุรี">
+<meta property="og:description" content="ระบบดิจิทัลสำหรับพยาบาล รพ.สต. ดูแลผู้ป่วย NCD/CKD พร้อม eGFR staging และออฟไลน์ได้">
+<meta property="og:image" content="https://ncd.futuregreennet.com/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:locale" content="th_TH">
+<meta property="og:site_name" content="NCD Care Hub">
+
+<!-- ── Twitter Card ── -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="NCD Care Hub — ระบบดูแลผู้ป่วย NCD & CKD">
+<meta name="twitter:description" content="ระบบดิจิทัลสำหรับพยาบาล รพ.สต. ดูแลผู้ป่วย NCD/CKD พร้อม eGFR staging">
+<meta name="twitter:image" content="https://ncd.futuregreennet.com/og-image.png">
+
+<!-- ── PWA Manifest ── -->
+<link rel="manifest" href="/manifest.json">
+
+<!-- ── Apple PWA (iOS) ── -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="NCD Care Hub">
+<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 180 180%22><rect width=%22180%22 height=%22180%22 rx=%2220%22 fill=%22%230A0E1A%22/><text y=%22140%22 x=%2210%22 font-size=%22130%22>⚕️</text></svg>">
+
+<!-- ── Service Worker Registration ── -->
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js')
+        .then(reg => console.log('✅ NCD SW registered:', reg.scope))
+        .catch(err => console.warn('SW registration failed:', err));
+    });
+  }
+</script>
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
