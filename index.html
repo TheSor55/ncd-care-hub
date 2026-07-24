@@ -469,14 +469,26 @@ body{font-family:var(--font);background:var(--canvas);color:var(--ink-800);line-
     <!-- ══ PATIENT LIST ══ -->
     <div class="page" id="p-patient-list">
       <div class="page-header"><h2>รายชื่อผู้ป่วย</h2><p>ผู้ป่วยที่ลงทะเบียนในระบบทั้งหมด</p></div>
+      
+      <!-- ─── JHCIS/HOSxP DATA IMPORT PANEL ─── -->
+      <div class="import-panel-ncd" style="background:var(--blue-50); border:1px solid var(--blue-100); border-radius:8px; padding:14px 18px; margin-bottom:16px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; transition: all 0.2s;">
+        <div>
+          <h4 style="margin:0; font-size:14px; font-weight:700; color:var(--blue-800); display:flex; align-items:center; gap:6px;">
+            <span>📥</span> เครื่องมือนำเข้าข้อมูลผู้ป่วยและค่าแล็บสะสม (JHCIS / HOSxP)
+          </h4>
+          <p style="margin:4px 0 0 0; font-size:12px; color:var(--blue-600); line-height:1.4;">
+            อัปโหลดไฟล์รายงาน Excel หรือ CSV เพื่อลงทะเบียนประวัติผู้ป่วยและประเมินผลแล็บ/ระดับความดันโลหิตแบบรายกลุ่มอัตโนมัติ
+          </p>
+        </div>
+        <button class="btn" onclick="openExcelImportModal()" style="background:var(--blue-600); color:white; border:none; padding:8px 16px; font-size:13px; font-weight:600; display:flex; align-items:center; gap:6px; cursor:pointer; border-radius:6px; box-shadow:0 2px 4px rgba(37,99,235,0.15); transition:all 0.2s;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          เลือกไฟล์รายงาน (.xlsx, .csv)
+        </button>
+      </div>
       <div class="card">
         <div class="card-head">
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
             <div class="search-wrap"><input class="form-input" id="pt-search" placeholder="ค้นหาชื่อ หรือ HN…" oninput="renderPtTable()" style="width:220px"></div>
-            <button class="btn btn-secondary" onclick="openExcelImportModal()" style="display:flex;align-items:center;gap:6px;border-color:var(--slate-200);background:var(--white);color:var(--slate-700)">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-              นำเข้า JHCIS/HOSxP
-            </button>
             <select class="form-input form-select" id="pt-sort" onchange="renderPtTable()" style="width:160px">
               <option value="name-asc">ชื่อ ก→ฮ</option>
               <option value="name-desc">ชื่อ ฮ→ก</option>
