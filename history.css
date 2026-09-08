@@ -1,0 +1,61 @@
+.history-toolbar{display:flex;gap:12px;flex-wrap:wrap;margin:14px 0}.history-toolbar label{flex:1;min-width:140px;color:#374151;font-size:13px}.history-toolbar select{width:100%;margin-top:5px}.history-summary{padding:12px 16px;background:#e8faf7;border-radius:10px;color:#0e7c6b;margin:12px 0}.history-table{width:100%;border-collapse:collapse;font-size:13px}.history-table th,.history-table td{padding:10px 8px;border-bottom:1px solid #e5e7eb;text-align:left;white-space:nowrap}.history-table th{background:#f4f6fa}.history-chart{width:100%;height:auto;display:block;min-width:300px}.history-empty{padding:24px 12px;text-align:center;color:#475569}.history-note{font-size:13px;color:#475569;margin:10px 0;line-height:1.7}.history-detail{margin:8px 0;padding:12px;background:#f4f6fa;border-radius:8px;white-space:normal}.main{min-width:0}.two-col-3-7>*{min-width:0}.history-scroll{overflow-x:auto}.history-preview{padding:8px 16px;background:#fff7ed;color:#9a3412;font-size:13px}.history-toolbar select:focus-visible,button:focus-visible{outline:3px solid #0e7c6b;outline-offset:3px}@media(max-width:600px){.topbar{flex-wrap:wrap;height:auto;padding:12px;gap:8px}.three-col{grid-template-columns:1fr}.history-toolbar label{min-width:120px}.page-wrap{padding:12px}.card{padding:16px}.kpi-grid{gap:8px}.main{width:100%}}
+.modal-bg{
+  padding:16px;
+  overflow-y:auto;
+  overscroll-behavior:contain;
+}
+.modal-bg .modal-box{
+  min-height:0;
+  max-height:calc(100vh - 32px);
+  max-height:calc(100dvh - 32px);
+  overflow-y:auto;
+  overscroll-behavior:contain;
+  scrollbar-gutter:stable;
+  -webkit-overflow-scrolling:touch;
+}
+.modal-bg .modal-head{
+  position:sticky;
+  top:-24px;
+  z-index:2;
+  background:#fff;
+  padding:12px 0;
+}
+#confirm-modal{z-index:1100}
+#ei-modal .modal-box{max-width:720px!important}
+#ei-stats{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+.sb{overflow-y:auto;overscroll-behavior:contain}
+.main{min-width:0;max-width:100%}
+.page-wrap{padding-bottom:calc(100px + env(safe-area-inset-bottom,0px))}
+.ckd-actions{
+  position:sticky;
+  bottom:0;
+  z-index:20;
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+  align-items:center;
+  justify-content:space-between;
+  padding:12px 16px calc(12px + env(safe-area-inset-bottom,0px));
+  background:#fff;
+  border:1px solid #cbd5e1;
+  border-radius:12px;
+  box-shadow:0 -4px 18px #0f172a12;
+  margin-top:16px;
+}
+.ckd-actions .btn{min-height:44px;white-space:normal}
+.ckd-actions p{font-size:13px;color:#475569;margin:0}
+@media(max-width:600px){
+  .modal-bg{padding:8px}
+  .modal-bg .modal-box{width:100%;padding:16px;max-height:calc(100vh - 16px);max-height:calc(100dvh - 16px)}
+  .modal-bg .modal-head{top:-16px}
+  .ckd-actions{padding:10px 10px calc(10px + env(safe-area-inset-bottom,0px))}
+  .ckd-actions p{width:100%}
+  .ckd-actions .btn{flex:1}
+}
+@media print{.ckd-actions{display:none}}
+
+/* Keep long import content scrollable even on short landscape screens. */
+#excel-import-modal .modal-content{overflow-y:auto;min-height:0;max-height:calc(100dvh - 32px)!important;overscroll-behavior:contain}
+#excel-import-modal .modal-content>div{flex-shrink:0}
+.page-wrap{padding-bottom:calc(100px + env(safe-area-inset-bottom,0px))}
+@media(max-width:600px){#excel-import-modal .modal-content{width:100%!important;padding:16px!important;max-height:calc(100dvh - 16px)!important}.topbar-left,.topbar-right{flex-wrap:wrap;min-width:0}.topbar-crumb{overflow-wrap:anywhere}}

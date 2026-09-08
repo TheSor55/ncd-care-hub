@@ -31,7 +31,7 @@
 <meta name="twitter:image" content="https://ncd.futuregreennet.com/og-image.png">
 
 <!-- ── PWA Manifest ── -->
-<link rel="manifest" href="/manifest.json">
+
 
 <!-- ── Apple PWA (iOS) ── -->
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -40,18 +40,10 @@
 <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 180 180%22><rect width=%22180%22 height=%22180%22 rx=%2220%22 fill=%22%230A0E1A%22/><text y=%22140%22 x=%2210%22 font-size=%22130%22>⚕️</text></svg>">
 
 <!-- ── Service Worker Registration ── -->
-<script>
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('/sw.js')
-        .then(reg => console.log('✅ NCD SW registered:', reg.scope))
-        .catch(err => console.warn('SW registration failed:', err));
-    });
-  }
-</script>
 
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+
+
 
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -394,6 +386,11 @@ body{font-family:var(--font);background:var(--canvas);color:var(--ink-800);line-
 #mob-menu{display:none;background:none;border:none;font-size:22px;cursor:pointer;color:var(--ink-700);padding:4px;line-height:1}
 @media print{.sb,.topbar,.btn,.modal-bg{display:none!important}.main{margin-left:0}}
 </style>
+<link rel="stylesheet" href="history.css">
+<link rel="stylesheet" href="dashboard.css">
+<link rel="stylesheet" href="navigation.css">
+<link rel="manifest" href="./manifest.json">
+<script>if('serviceWorker' in navigator && location.protocol==='https:'){window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));}</script>
 </head>
 <body>
 
@@ -515,7 +512,7 @@ body{font-family:var(--font);background:var(--canvas);color:var(--ink-800);line-
     <!-- ══ PATIENT LIST ══ -->
     <div class="page" id="p-patient-list">
       <div class="page-header"><h2>รายชื่อผู้ป่วย</h2><p>ผู้ป่วยที่ลงทะเบียนในระบบทั้งหมด</p></div>
-      
+
       <!-- ─── JHCIS/HOSxP DATA IMPORT PANEL ─── -->
       <div class="import-panel-ncd" style="background:var(--blue-50); border:1px solid var(--blue-100); border-radius:8px; padding:14px 18px; margin-bottom:16px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; transition: all 0.2s;">
         <div>
@@ -602,7 +599,7 @@ body{font-family:var(--font);background:var(--canvas);color:var(--ink-800);line-
     </div>
 
     <!-- ══ CKD SCREENING ══ -->
-    <div class="page" id="p-ckd">
+    <div class="page" id="p-ckd"><div class="history-preview">ประวัติผลตรวจย้อนหลัง · วันที่ในตารางแสดง พ.ศ. · เก็บข้อมูลในเบราว์เซอร์เครื่องนี้</div>
       <div class="page-header"><h2>คัดกรองโรคไตเรื้อรัง (CKD)</h2><p>คำนวณ eGFR ด้วยสมการ CKD-EPI 2021 · จัดระดับตาม KDIGO 2024</p></div>
       <div class="two-col-3-7">
         <div>
@@ -656,7 +653,7 @@ body{font-family:var(--font);background:var(--canvas);color:var(--ink-800);line-
               <div class="form-group"><label class="form-label">HDL (mg/dL)</label><input class="form-input font-mono" id="ckd-hdl" type="number" placeholder="♂&gt;55  ♀&gt;65"></div>
               <div class="form-group"><label class="form-label">LDL-C Direct (mg/dL)</label><input class="form-input font-mono" id="ckd-ldl" type="number" placeholder="ปกติ &lt;100"></div>
             </div>
-            <div class="form-group mb-12"><label class="form-label">วันที่ตรวจ</label><input class="form-input" id="ckd-date" type="date"></div>
+
             <button class="btn btn-primary" onclick="calcCKD()" style="width:100%">คำนวณ eGFR และจัดระดับ →</button>
           </div>
 
@@ -700,8 +697,13 @@ body{font-family:var(--font);background:var(--canvas);color:var(--ink-800);line-
               <span style="display:flex;align-items:center;gap:5px;font-size:11.5px;color:var(--slate-300)"><span style="width:12px;height:12px;background:#FEE2E2;border-radius:3px;display:inline-block"></span>สูงมาก</span>
             </div>
           </div>
-          <div class="card"><div class="card-title mb-12">ประวัติการคัดกรอง</div><div id="ckd-hist"></div></div>
+          <div class="card"><div class="card-title mb-12">ประวัติรายปีและแนวโน้มผลตรวจ</div><div id="ckd-hist"></div></div>
         </div>
+      </div>
+      <div class="ckd-actions" aria-label="เครื่องมือบันทึกผลคัดกรอง">
+        <p>เลือกผู้ป่วยและวันที่ตรวจ → คำนวณ → บันทึก</p>
+        <button class="btn btn-secondary" onclick="calcCKD();document.getElementById('ckd-result').scrollIntoView({block:'center',behavior:'smooth'})">คำนวณผล</button>
+        <button class="btn btn-primary" onclick="saveCKDRes()">บันทึกผลลงประวัติ</button>
       </div>
     </div>
 
@@ -1193,7 +1195,7 @@ function calcCKD(){
   const ck=cr/kk;
   const eGFR=+(142*Math.pow(Math.min(ck,1),a)*Math.pow(Math.max(ck,1),-1.2)*Math.pow(0.9938,age)*sf).toFixed(1);
   let g=eGFR>=90?'G1':eGFR>=60?'G2':eGFR>=45?'G3a':eGFR>=30?'G3b':eGFR>=15?'G4':'G5';
-  
+
   // แปลผลระดับโปรตีนในปัสสาวะ (Staging Albuminuria) ด้วยแผ่นจุ่มปัสสาวะ Urine Dipstick เสริม
   let av='A1';
   let aUse=uacr;
@@ -1206,7 +1208,7 @@ function calcCKD(){
     else if(dipstick==='2+' || dipstick==='3+' || dipstick==='4+') av='A3';
     else av='A1';
   }
-  
+
   const rm={G1:{A1:'ต่ำ',A2:'ปานกลาง',A3:'สูง'},G2:{A1:'ต่ำ',A2:'ปานกลาง',A3:'สูง'},G3a:{A1:'ปานกลาง',A2:'สูง',A3:'สูงมาก'},G3b:{A1:'สูง',A2:'สูงมาก',A3:'สูงมาก'},G4:{A1:'สูงมาก',A2:'สูงมาก',A3:'สูงมาก'},G5:{A1:'ไตวาย',A2:'ไตวาย',A3:'ไตวาย'}};
   const risk=rm[g][av];
   document.querySelectorAll('.heatmap td[id^="c-"]').forEach(c=>c.classList.remove('hm-active'));
@@ -1319,24 +1321,24 @@ function renderCKDHist(){
 function saveSM(){
   const pid=parseInt(document.getElementById('sm-pt').value);
   if(!pid)return toast('เลือกผู้ป่วยก่อน','error');
-  
+
   const sbpStr=document.getElementById('sm-sbp').value;
   const dbpStr=document.getElementById('sm-dbp').value;
   const wtStr=document.getElementById('sm-wt').value;
   const hrStr=document.getElementById('sm-hr').value;
-  
+
   // ตรวจสอบความถูกต้องของข้อมูล (Input Validation)
   const sbp=parseInt(sbpStr);
   const dbp=parseInt(dbpStr);
   if(isNaN(sbp) || sbp <= 0) return toast('กรุณากรอกค่าความดันตัวบน (Systolic) ที่มากกว่า 0','error');
   if(isNaN(dbp) || dbp <= 0) return toast('กรุณากรอกค่าความดันตัวล่าง (Diastolic) ที่มากกว่า 0','error');
-  
+
   const rec={id:DB.nid('sm'),patientId:pid,date:document.getElementById('sm-date').value,sbp:sbpStr,dbp:dbpStr,wt:wtStr,hr:hrStr,bx:[1,2,3,4,5,6].map(i=>document.getElementById('bx'+i).checked),note:document.getElementById('sm-note').value,at:new Date().toISOString()};
   const recs=DB.get('sm');recs.push(rec);DB.set('sm',recs);
   [1,2,3,4,5,6].forEach(i=>document.getElementById('bx'+i).checked=false);
   document.getElementById('sm-note').value='';
   toast('บันทึกข้อมูลวันนี้แล้ว');renderSMHist();renderBPChart();
-  
+
   // แจ้งเตือนความดันโลหิตสูงวิกฤต (Hypertensive Crisis Check)
   if(sbp >= 180 || dbp >= 120){
     showEmergencyModal(sbp, dbp);
@@ -1347,7 +1349,7 @@ function showEmergencyModal(sbp, dbp) {
   // ลบ modal เก่าถ้ามีค้างอยู่
   const existing = document.getElementById('emergency-modal');
   if(existing) existing.remove();
-  
+
   const modalHtml = `
     <div class="modal active" id="emergency-modal" style="z-index:9999; display:flex; align-items:center; justify-content:center; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(15,23,42,0.65); backdrop-filter:blur(4px);">
       <div class="modal-content" style="background:var(--white); border-radius:12px; padding:24px; border-top:8px solid var(--rose-600); max-width:400px; width:90%; text-align:center; box-shadow:0 20px 25px -5px rgba(0,0,0,0.15);">
@@ -1386,21 +1388,21 @@ function renderBPChart(){
   if(!pid){el.innerHTML='<div class="text-xs text-muted" style="padding:20px 0">เลือกผู้ป่วยเพื่อดูกราฟ</div>';return;}
   const recs=DB.get('sm').filter(r=>r.patientId===pid&&r.sbp).slice(-7);
   if(!recs.length){el.innerHTML='<div class="text-xs text-muted" style="padding:20px 0">ยังไม่มีข้อมูลความดัน</div>';return;}
-  
+
   // คำนวณขีดจำกัดสูงสุดจากทั้ง SBP และ DBP (ค่าสูงสุด หรือค่าเริ่มต้น 160)
   const maxV=Math.max(...recs.map(r=>Math.max(parseInt(r.sbp)||0, parseInt(r.dbp)||0)),160);
   const H=80;
-  
+
   el.innerHTML=recs.map(r=>{
     const sbp=parseInt(r.sbp)||0;
     const dbp=parseInt(r.dbp)||0;
-    
+
     const hS=Math.max(6,Math.round(sbp/maxV*H));
     const hD=Math.max(6,Math.round(dbp/maxV*H));
-    
+
     const clS=sbp>=140?'b-ht':sbp>=120?'b-pre':'b-normal';
     const clD=dbp>=90?'b-dbp-ht':dbp>=80?'b-dbp-pre':'b-dbp-normal';
-    
+
     return `
       <div class="bar-group" style="flex:1; display:flex; align-items:flex-end; gap:3px; height:100%; position:relative; justify-content:center; padding-bottom:22px;">
         <!-- แท่งความดันตัวบน (Systolic) -->
@@ -1666,7 +1668,7 @@ function processImportFile(file) {
   reader.onload = (e) => {
     try {
       const data = JSON.parse(e.target.result);
-      
+
       // การตรวจเช็คโครงสร้างไฟล์ (รองรับไฟล์ backup เก่าและใหม่)
       // ต้องมีอย่างน้อย key 'patients' เป็น Array (key อื่นๆ optional)
       if (!data || typeof data !== 'object' || !Array.isArray(data.patients)) {
@@ -1679,7 +1681,7 @@ function processImportFile(file) {
       ['ckd-hist','sm','appointments','refer','referrals'].forEach(k => {
         if (!Array.isArray(data[k])) data[k] = [];
       });
-      
+
       _importData = data;
 
       const meta = data._meta || {};
@@ -1792,9 +1794,9 @@ function closeExcelImportModal() {
 function handleExcelUpload(input) {
   const file = input.files[0];
   if (!file) return;
-  
+
   const reader = new FileReader();
-  
+
   if (file.name.endsWith('.csv')) {
     reader.onload = function(e) {
       try {
@@ -1828,12 +1830,12 @@ function handleExcelUpload(input) {
 function parseCSVText(text) {
   const lines = text.split('\n');
   if (lines.length === 0) return toast('ไฟล์ว่างเปล่า', 'error');
-  
+
   let delimiter = ',';
   const firstLine = lines[0];
   if (firstLine.includes(';')) delimiter = ';';
   else if (firstLine.includes('\t')) delimiter = '\t';
-  
+
   const rows = lines.map(line => {
     let arr = [];
     let insideQuote = false;
@@ -1852,15 +1854,15 @@ function parseCSVText(text) {
     arr.push(entry.trim());
     return arr;
   }).filter(row => row.length > 0 && row.some(cell => cell !== ""));
-  
+
   processImportRows(rows);
 }
 
 function processImportRows(rows) {
   if (rows.length < 2) return toast('ไฟล์ต้องมีแถวหัวข้อและข้อมูลผู้ป่วยอย่างน้อย 1 แถว', 'error');
-  
+
   const headers = rows[0].map(h => String(h || '').trim().toLowerCase());
-  
+
   const mappingKeys = {
     hn: ['hn', 'h.n', 'เลขผู้ป่วย', 'เลขประจำตัว', 'id', 'pid', 'เลขบัตร', 'เลขประจำตัวผู้ป่วย'],
     name: ['name', 'ชื่อ', 'ชื่อ-สกุล', 'ชื่อสกุล', 'ชื่อเต็ม', 'fullname', 'ผู้ป่วย', 'ชื่อคนไข้'],
@@ -1873,20 +1875,20 @@ function processImportRows(rows) {
     sbp: ['sbp', 'systolic', 'ความดันบน', 'ความดันโลหิตตัวบน', 'bp_systolic'],
     dbp: ['dbp', 'diastolic', 'ความดันล่าง', 'ความดันโลหิตตัวล่าง', 'bp_diastolic']
   };
-  
+
   _excelMapping = {};
   for (const [key, keywords] of Object.entries(mappingKeys)) {
     const idx = headers.findIndex(h => keywords.some(kw => h.includes(kw)));
     _excelMapping[key] = idx;
   }
-  
+
   if (_excelMapping.hn === -1 || _excelMapping.name === -1) {
     return toast('ไม่พบช่องข้อมูลที่สแกนเป็น HN หรือ ชื่อ-สกุล ในแถวแรกของไฟล์ กรุณาตรวจสอบหัวข้อตาราง', 'error');
   }
-  
+
   const statusEl = document.getElementById('excel-mapping-status');
   const labels = {hn:'HN', name:'ชื่อ-สกุล', dob:'วันเกิด', sex:'เพศ', phone:'เบอร์โทร', cr:'Creatinine', uacr:'UACR/Microalb', fbs:'FBS น้ำตาล', sbp:'ความดันบน', dbp:'ความดันล่าง'};
-  
+
   statusEl.innerHTML = Object.entries(_excelMapping).map(([key, idx]) => {
     const found = idx !== -1;
     const color = found ? 'var(--teal-600)' : 'var(--slate-400)';
@@ -1896,21 +1898,21 @@ function processImportRows(rows) {
       <strong>${labels[key]}:</strong> <span style="font-family:var(--mono); font-size:11px">${text}</span>
     </div>`;
   }).join('');
-  
+
   _excelImportData = [];
   for (let i = 1; i < rows.length; i++) {
     const row = rows[i];
     if (row.length === 0 || !row[_excelMapping.hn]) continue;
-    
+
     const hn = String(row[_excelMapping.hn]).trim();
     const name = String(row[_excelMapping.name]).trim();
     if (!hn || !name) continue;
-    
+
     let dob = "";
     if (_excelMapping.dob !== -1 && row[_excelMapping.dob]) {
       dob = parseThaiDate(row[_excelMapping.dob]);
     }
-    
+
     let sex = "หญิง";
     if (_excelMapping.sex !== -1 && row[_excelMapping.sex]) {
       const sVal = String(row[_excelMapping.sex]).trim().toLowerCase();
@@ -1918,7 +1920,7 @@ function processImportRows(rows) {
         sex = 'ชาย';
       }
     }
-    
+
     const pt = {
       hn: hn,
       name: name,
@@ -1933,11 +1935,11 @@ function processImportRows(rows) {
     };
     _excelImportData.push(pt);
   }
-  
+
   if (_excelImportData.length === 0) {
     return toast('ไม่พบแถวข้อมูลผู้ป่วยที่ถูกต้องในไฟล์', 'error');
   }
-  
+
   const tbody = document.querySelector('#excel-preview-table tbody');
   tbody.innerHTML = _excelImportData.slice(0, 5).map(pt => {
     return `<tr style="border-bottom:1px solid var(--slate-50)">
@@ -1952,25 +1954,25 @@ function processImportRows(rows) {
       <td style="padding:8px 10px; font-family:var(--mono)">${(isNaN(pt.sbp)||isNaN(pt.dbp))?'–':(pt.sbp+'/'+pt.dbp)}</td>
     </tr>`;
   }).join('');
-  
+
   document.getElementById('excel-preview-area').style.display = 'block';
-  
+
   const summaryEl = document.getElementById('excel-summary-text');
   summaryEl.textContent = `📋 ตรวจพบข้อมูลสมบูรณ์พร้อมนำเข้าทั้งหมด ${_excelImportData.length} รายการ`;
-  
+
   document.getElementById('excel-confirm-btn').style.display = 'block';
 }
 
 function parseThaiDate(val) {
   if (!val) return "";
-  
+
   if (typeof val === 'number') {
     const d = new Date((val - 25569) * 86400 * 1000);
     let y = d.getFullYear();
     if (y > 2400) y -= 543;
     return y + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
   }
-  
+
   const str = String(val).trim();
   let match = str.match(/^(\\d{4})[-/](\\d{1,2})[-/](\\d{1,2})$/);
   if (match) {
@@ -1978,33 +1980,33 @@ function parseThaiDate(val) {
     if (y > 2400) y -= 543;
     return y + '-' + String(match[2]).padStart(2,'0') + '-' + String(match[3]).padStart(2,'0');
   }
-  
+
   match = str.match(/^(\\d{1,2})[-/](\\d{1,2})[-/](\\d{4})$/);
   if (match) {
     let y = parseInt(match[3]);
     if (y > 2400) y -= 543;
     return y + '-' + String(match[2]).padStart(2,'0') + '-' + String(match[1]).padStart(2,'0');
   }
-  
+
   return "";
 }
 
 function confirmExcelImport() {
   if (_excelImportData.length === 0) return;
-  
+
   const pts = DB.get('patients');
   let newCount = 0;
   let updateCount = 0;
   let calcCount = 0;
   let smCount = 0;
-  
+
   const ckdHist = DB.get('ckd-hist');
   const smHist = DB.get('sm');
-  
+
   _excelImportData.forEach(pt => {
     let pIdx = pts.findIndex(x => x.hn === pt.hn);
     let patientId = 0;
-    
+
     const ptProfile = {
       hn: pt.hn,
       name: pt.name,
@@ -2023,7 +2025,7 @@ function confirmExcelImport() {
       referred: pIdx !== -1 ? pts[pIdx].referred : false,
       createdAt: pIdx !== -1 ? pts[pIdx].createdAt : new Date().toISOString()
     };
-    
+
     if (pIdx !== -1) {
       patientId = pts[pIdx].id;
       ptProfile.id = patientId;
@@ -2035,7 +2037,7 @@ function confirmExcelImport() {
       pts.push(ptProfile);
       newCount++;
     }
-    
+
     if (!isNaN(pt.cr) && pt.cr > 0 && ptProfile.dob) {
       const age = calcAgeFromDob(ptProfile.dob);
       if (age && age > 0) {
@@ -2045,14 +2047,14 @@ function confirmExcelImport() {
         const sf = sexVal === 1 ? 1.0 : 1.012;
         const ck = pt.cr / kk;
         const eGFR = +(142 * Math.pow(Math.min(ck, 1), a) * Math.pow(Math.max(ck, 1), -1.2) * Math.pow(0.9938, age) * sf).toFixed(1);
-        
+
         let g = eGFR >= 90 ? 'G1' : eGFR >= 60 ? 'G2' : eGFR >= 45 ? 'G3a' : eGFR >= 30 ? 'G3b' : eGFR >= 15 ? 'G4' : 'G5';
-        
+
         let av = 'A1';
         if (!isNaN(pt.uacr)) {
           av = pt.uacr >= 300 ? 'A3' : pt.uacr >= 30 ? 'A2' : 'A1';
         }
-        
+
         const rm = {
           G1:{A1:'ต่ำ',A2:'ปานกลาง',A3:'สูง'},
           G2:{A1:'ต่ำ',A2:'ปานกลาง',A3:'สูง'},
@@ -2062,7 +2064,7 @@ function confirmExcelImport() {
           G5:{A1:'ไตวาย',A2:'ไตวาย',A3:'ไตวาย'}
         };
         const risk = rm[g][av];
-        
+
         const ckdResult = {
           eGFR: eGFR,
           gStage: g,
@@ -2082,20 +2084,20 @@ function confirmExcelImport() {
           ldl: null,
           date: new Date().toISOString().slice(0, 10)
         };
-        
+
         ptProfile.ckdResult = ckdResult;
-        
+
         ckdHist.push({
           id: DB.nid('ckd-hist') + calcCount,
           patientId: patientId,
           ...ckdResult,
           at: new Date().toISOString()
         });
-        
+
         calcCount++;
       }
     }
-    
+
     if (!isNaN(pt.sbp) && !isNaN(pt.dbp) && pt.sbp > 0 && pt.dbp > 0) {
       smHist.push({
         id: DB.nid('sm') + smCount,
@@ -2112,11 +2114,11 @@ function confirmExcelImport() {
       smCount++;
     }
   });
-  
+
   DB.set('patients', pts);
   if (calcCount > 0) DB.set('ckd-hist', ckdHist);
   if (smCount > 0) DB.set('sm', smHist);
-  
+
   toast(`นำเข้าสำเร็จ: คนใหม่ ${newCount} ราย, อัปเดตคนเดิม ${updateCount} ราย, ประเมินค่าไต ${calcCount} ราย`, 'success');
   closeExcelImportModal();
   refreshAll();
@@ -2129,7 +2131,7 @@ function confirmExcelImport() {
         <h3 style="margin:0; font-size:17.5px; font-weight:700; color:var(--ink-800)">นำเข้าข้อมูลผู้ป่วยจาก Excel / CSV (JHCIS / HOSxP)</h3>
         <button onclick="closeExcelImportModal()" style="background:none; border:none; font-size:20px; color:var(--slate-400); cursor:pointer; padding:4px;">✕</button>
       </div>
-      
+
       <!-- Upload area -->
       <div id="excel-drop-zone" onclick="document.getElementById('excel-file-input').click()" style="border:2px dashed var(--blue-200); border-radius:8px; padding:32px 16px; text-align:center; cursor:pointer; background:var(--canvas); transition:all 0.2s ease-in-out;">
         <div style="font-size:36px; margin-bottom:8px">📊</div>
@@ -2142,7 +2144,7 @@ function confirmExcelImport() {
       <div id="excel-preview-area" style="display:none; flex:1; overflow-y:auto; margin-top:16px;">
         <div style="font-size:12px; font-weight:700; color:var(--slate-400); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px;">การตรวจพบหัวตารางคอลัมน์ (Auto Column Mapping)</div>
         <div id="excel-mapping-status" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap:6px; margin-bottom:16px; padding:10px; background:var(--canvas); border-radius:6px; border:1px solid var(--slate-100); font-size:12px;"></div>
-        
+
         <div style="font-size:12px; font-weight:700; color:var(--slate-400); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px;">ตัวอย่างข้อมูลคนไข้ที่จะนำเข้า (5 รายแรก)</div>
         <div style="overflow-x:auto; border:1px solid var(--slate-100); border-radius:6px; margin-bottom:12px;">
           <table style="width:100%; border-collapse:collapse; font-size:11.5px; text-align:left;" id="excel-preview-table">
@@ -2162,7 +2164,7 @@ function confirmExcelImport() {
             <tbody></tbody>
           </table>
         </div>
-        
+
         <div id="excel-summary-text" style="font-size:12.5px; color:var(--teal-600); font-weight:600; padding:4px 0 12px 0;"></div>
       </div>
 
@@ -2174,5 +2176,9 @@ function confirmExcelImport() {
     </div>
   </div>
 
+<script src="history-core.js"></script>
+<script src="history.js"></script>
+<script src="dashboard.js"></script>
+<script src="navigation.js"></script>
 </body>
 </html>
