@@ -1254,16 +1254,30 @@ function loadLeaflet(callback){
 
 // ── MAP PICKER MODAL ──────────────────────────────────
 let _pickerTargetPatientId = null;
+let _pickerCurrentLat = null;
+let _pickerCurrentLng = null;
 
 function populatePickerPatientSelect(selectedId){
   const select = document.getElementById('picker-patient-select');
   if(!select) return;
   const pts = DB.get('patients');
   select.innerHTML = '<option value="">— เลือก/เปลี่ยนคนไข้ —</option>' + pts.map(p => {
-    const hasGps = p.lat && p.lng && Number.isFinite(Number(p.lat)) && Number.isFinite(Number(p.lng));
+    const hasGps = p.lat && p.lng && Number.isFinite(Number(p.lat)) && Number.isFinite(Number(p.lng)) && Number(p.lat) !== 0 && Number(p.lng) !== 0;
     const icon = hasGps ? '📍' : '⚪';
     return `<option value="${p.id}" ${p.id === Number(selectedId) ? 'selected' : ''}>${icon} ${escHtml(p.hn)} - ${escHtml(p.name)}</option>`;
   }).join('');
+}
+
+function updatePickerCoords(lat, lng){
+  _pickerCurrentLat = Number(lat);
+  _pickerCurrentLng = Number(lng);
+  const latStr = _pickerCurrentLat.toFixed(6);
+  const lngStr = _pickerCurrentLng.toFixed(6);
+
+  const elLat = document.getElementById('picker-lat-val');
+  const elLng = document.getElementById('picker-lng-val');
+  if(elLat) elLat.textContent = latStr;
+  if(elLng) elLng.textContent = lngStr;
 }
 
 function pickerSelectPatient(id){
@@ -1271,23 +1285,48 @@ function pickerSelectPatient(id){
   const p = DB.get('patients').find(x => x.id === Number(id));
   if(!p) return;
   _pickerTargetPatientId = p.id;
-  document.getElementById('picker-patient-hn').textContent = p.hn ? `HN ${p.hn}` : 'ไม่มี HN';
-  document.getElementById('picker-patient-name').textContent = p.name || 'ไม่ระบุชื่อ';
   
-  if(p.address){
-    document.getElementById('picker-search-input').value = p.address;
+  const elHn = document.getElementById('picker-patient-hn');
+  const elName = document.getElementById('picker-patient-name');
+  if(elHn) elHn.textContent = p.hn ? `HN ${p.hn}` : 'ไม่มี HN';
+  if(elName) elName.textContent = p.name || 'ไม่ระบุชื่อ';
+  
+  const sel = document.getElementById('picker-patient-select');
+  if(sel) sel.value = String(p.id);
+
+  const btnConfirm = document.getElementById('btn-picker-confirm');
+  if(btnConfirm) {
+    btnConfirm.textContent = `✓ บันทึกพิกัด (HN ${p.hn})`;
   }
-  
-  const hasCoord = p.lat && p.lng && Number.isFinite(Number(p.lat)) && Number.isFinite(Number(p.lng));
-  const lat = hasCoord ? Number(p.lat) : 13.1388;
-  const lng = hasCoord ? Number(p.lng) : 100.9955;
-  const zoom = hasCoord ? 17 : 14;
-  
-  if(_pickerMap && _pickerMarker){
-    _pickerMap.setView([lat, lng], zoom);
-    _pickerMarker.setLatLng([lat, lng]);
+
+  const sInput = document.getElementById('picker-search-input');
+  if(sInput){
+    sInput.value = p.address || '';
   }
-  updatePickerCoords(lat, lng);
+
+  const hasCoord = p.lat && p.lng && Number.isFinite(Number(p.lat)) && Number.isFinite(Number(p.lng)) && Number(p.lat) !== 0 && Number(p.lng) !== 0;
+  
+  if(hasCoord){
+    const lat = Number(p.lat);
+    const lng = Number(p.lng);
+    if(_pickerMap && _pickerMarker){
+      _pickerMap.setView([lat, lng], 17);
+      _pickerMarker.setLatLng([lat, lng]);
+    }
+    updatePickerCoords(lat, lng);
+    toast(`📍 โหลดพิกัดเดิม: HN ${p.hn} (${p.name})`, 'success');
+  } else {
+    if(p.address && p.address.trim()){
+      toast(`ℹ️ กำลังค้นหาตำแหน่งตามที่อยู่: ${p.address}...`);
+      geocodeAddressToPicker(p.address, true);
+    } else {
+      toast(`ℹ️ HN ${p.hn} (${p.name}) ยังไม่มีพิกัด — กรุณาคลิกบนแผนที่เพื่อปักหมุดบ้าน`, 'warning');
+      if(_pickerMarker){
+        const cur = _pickerMarker.getLatLng();
+        updatePickerCoords(cur.lat, cur.lng);
+      }
+    }
+  }
 }
 
 function openMapPickerModal(targetId){
@@ -1296,16 +1335,28 @@ function openMapPickerModal(targetId){
   
   populatePickerPatientSelect(targetId);
 
+  let initialLat = 13.1388;
+  let initialLng = 100.9955;
+  let hasValidCoord = false;
+
+  const btnConfirm = document.getElementById('btn-picker-confirm');
+
   if (targetId) {
     _pickerTargetPatientId = Number(targetId);
     const p = DB.get('patients').find(x => x.id === _pickerTargetPatientId);
     if(p){
       document.getElementById('picker-patient-hn').textContent = p.hn ? `HN ${p.hn}` : 'ไม่มี HN';
       document.getElementById('picker-patient-name').textContent = p.name || 'ไม่ระบุชื่อ';
-      if(p.address){
-        document.getElementById('picker-search-input').value = p.address;
-      }
+      document.getElementById('picker-search-input').value = p.address || '';
       document.getElementById('picker-patient-select').value = String(p.id);
+
+      if(btnConfirm) btnConfirm.textContent = `✓ บันทึกพิกัด (HN ${p.hn})`;
+
+      if(p.lat && p.lng && Number.isFinite(Number(p.lat)) && Number.isFinite(Number(p.lng)) && Number(p.lat) !== 0 && Number(p.lng) !== 0){
+        initialLat = Number(p.lat);
+        initialLng = Number(p.lng);
+        hasValidCoord = true;
+      }
     }
   } else {
     const eid = parseInt(document.getElementById('f-edit-id')?.value) || 0;
@@ -1313,19 +1364,29 @@ function openMapPickerModal(targetId){
     const hn = (document.getElementById('f-hn')?.value || '').trim();
     const name = (document.getElementById('f-name')?.value || '').trim();
     const addr = (document.getElementById('f-address')?.value || '').trim();
+    const fLat = parseFloat(document.getElementById('f-lat')?.value);
+    const fLng = parseFloat(document.getElementById('f-lng')?.value);
 
     document.getElementById('picker-patient-hn').textContent = hn ? `HN ${hn}` : 'ผู้ป่วยใหม่';
     document.getElementById('picker-patient-name').textContent = name ? name : 'ยังไม่ระบุชื่อ';
-    if(addr){
-      document.getElementById('picker-search-input').value = addr;
+    document.getElementById('picker-search-input').value = addr || '';
+
+    if(btnConfirm){
+      btnConfirm.textContent = hn ? `✓ บันทึกพิกัด (HN ${hn})` : '✓ บันทึกพิกัดนี้ลงฟอร์ม';
     }
+
     if(_pickerTargetPatientId){
       document.getElementById('picker-patient-select').value = String(_pickerTargetPatientId);
+    }
+    if(Number.isFinite(fLat) && Number.isFinite(fLng) && fLat !== 0 && fLng !== 0){
+      initialLat = fLat;
+      initialLng = fLng;
+      hasValidCoord = true;
     }
   }
 
   loadLeaflet(()=>{
-    setTimeout(()=>initPickerMap(),100);
+    setTimeout(()=>initPickerMap(initialLat, initialLng, hasValidCoord),100);
   });
 }
 
@@ -1333,22 +1394,10 @@ function closeMapPickerModal(){
   document.getElementById('map-picker-modal').style.display='none';
 }
 
-function initPickerMap(){
-  let curLat = parseFloat(document.getElementById('f-lat')?.value);
-  let curLng = parseFloat(document.getElementById('f-lng')?.value);
-
-  if(_pickerTargetPatientId){
-    const p = DB.get('patients').find(x => x.id === _pickerTargetPatientId);
-    if(p && p.lat && p.lng && Number.isFinite(Number(p.lat)) && Number.isFinite(Number(p.lng))){
-      curLat = Number(p.lat);
-      curLng = Number(p.lng);
-    }
-  }
-
-  const hasCoord=Number.isFinite(curLat)&&Number.isFinite(curLng)&&curLat!==0&&curLng!==0;
-  const startLat=hasCoord?curLat:13.1388;
-  const startLng=hasCoord?curLng:100.9955;
-  const zoom=hasCoord?16:14;
+function initPickerMap(startLat, startLng, hasCoord){
+  startLat = Number.isFinite(startLat) ? startLat : 13.1388;
+  startLng = Number.isFinite(startLng) ? startLng : 100.9955;
+  const zoom = hasCoord ? 17 : 14;
 
   const container=document.getElementById('picker-map-canvas');
   if(!_pickerMap){
@@ -1377,40 +1426,52 @@ function initPickerMap(){
   updatePickerCoords(startLat,startLng);
 }
 
-function updatePickerCoords(lat,lng){
-  document.getElementById('picker-lat-val').textContent=Number(lat).toFixed(6);
-  document.getElementById('picker-lng-val').textContent=Number(lng).toFixed(6);
-  document.getElementById('picker-marker-info').innerHTML=`📍 <strong>${Number(lat).toFixed(6)}, ${Number(lng).toFixed(6)}</strong> <span style="color:var(--slate-300)">(ลากหมุดหรือคลิกบนแผนที่เพื่อย้ายตำแหน่ง)</span>`;
-}
-
 function confirmPickerLocation(){
-  const lat=document.getElementById('picker-lat-val').textContent;
-  const lng=document.getElementById('picker-lng-val').textContent;
-  if(lat!=='-'&&lng!=='-'){
-    if(_pickerTargetPatientId){
-      const pts=DB.get('patients');
-      const p=pts.find(x=>x.id===_pickerTargetPatientId);
-      if(p){
-        p.lat=lat;
-        p.lng=lng;
-        DB.set('patients',pts);
-        toast(`บันทึกพิกัดสำเร็จ: HN ${p.hn} (${lat}, ${lng})`,'success');
-        renderPtTable();
-        if(document.getElementById('community-map-modal').style.display==='flex'){
-          renderCommunityMarkers();
-        }
-      }
-    }
-    const fLat=document.getElementById('f-lat');
-    const fLng=document.getElementById('f-lng');
-    if(fLat&&fLng){
-      fLat.value=lat;
-      fLng.value=lng;
-    }
-    if(!_pickerTargetPatientId){
-      toast(`ปักหมุดสำเร็จ: ${lat}, ${lng}`,'success');
+  let lat = _pickerCurrentLat;
+  let lng = _pickerCurrentLng;
+  if(lat == null || lng == null || !Number.isFinite(lat) || !Number.isFinite(lng)){
+    const elLat = document.getElementById('picker-lat-val');
+    const elLng = document.getElementById('picker-lng-val');
+    if(elLat && elLng && elLat.textContent !== '-' && elLng.textContent !== '-'){
+      lat = parseFloat(elLat.textContent);
+      lng = parseFloat(elLng.textContent);
     }
   }
+  if(lat == null || lng == null || !Number.isFinite(lat) || !Number.isFinite(lng)){
+    return toast('กรุณาคลิกเลือกตำแหน่งบนแผนที่ก่อนบันทึก','warning');
+  }
+
+  const latStr = Number(lat).toFixed(6);
+  const lngStr = Number(lng).toFixed(6);
+
+  if(_pickerTargetPatientId){
+    const pts=DB.get('patients');
+    const p=pts.find(x=>x.id===_pickerTargetPatientId);
+    if(p){
+      p.lat=latStr;
+      p.lng=lngStr;
+      DB.set('patients',pts);
+      toast(`✅ บันทึกพิกัดสำเร็จ: HN ${p.hn} (${p.name})`,'success');
+      
+      populatePickerPatientSelect(p.id);
+      renderPtTable();
+      if(document.getElementById('community-map-modal').style.display==='flex'){
+        renderCommunityMarkers();
+      }
+    }
+  }
+
+  const fLat=document.getElementById('f-lat');
+  const fLng=document.getElementById('f-lng');
+  if(fLat&&fLng){
+    fLat.value=latStr;
+    fLng.value=lngStr;
+  }
+  
+  if(!_pickerTargetPatientId){
+    toast(`✅ บันทึกพิกัดสำเร็จ: ${latStr}, ${lngStr}`,'success');
+  }
+
   closeMapPickerModal();
 }
 
@@ -1426,7 +1487,7 @@ function pickerGPS(){
         _pickerMarker.setLatLng([lat,lng]);
       }
       updatePickerCoords(lat,lng);
-      toast('ดึงพิกัด GPS สำเร็จ');
+      toast('ดึงพิกัด GPS สำเร็จ','success');
     },
     err=>toast('ดึง GPS ไม่สำเร็จ: '+err.message,'error'),
     {enableHighAccuracy:true,timeout:10000}
@@ -1434,26 +1495,83 @@ function pickerGPS(){
 }
 
 function searchPickerPlace(){
-  const q=document.getElementById('picker-search-input').value.trim();
-  if(!q) return toast('พิมพ์ชื่อสถานที่ ชุมชน หรือซอยที่ต้องการค้นหา','warning');
+  const sInput = document.getElementById('picker-search-input');
+  let q = (sInput ? sInput.value : '').trim();
+
+  // If input is empty but we have an active patient with an address, use their address
+  if(!q && _pickerTargetPatientId){
+    const p = DB.get('patients').find(x => x.id === _pickerTargetPatientId);
+    if(p && p.address) q = p.address.trim();
+  }
+
+  if(!q){
+    return toast('พิมพ์ชื่อคนไข้, HN, หรือชื่อสถานที่/ซอยที่ต้องการค้นหา','warning');
+  }
+
+  // 1. Check if q matches a patient in database (by HN or Name)
+  const pts = DB.get('patients');
+  const matchedPt = pts.find(p => 
+    (p.hn && p.hn.toLowerCase() === q.toLowerCase()) ||
+    (p.name && p.name.toLowerCase().includes(q.toLowerCase())) ||
+    (p.hn && p.hn.includes(q))
+  );
+
+  if(matchedPt){
+    pickerSelectPatient(matchedPt.id);
+    return;
+  }
+
+  // 2. Search as place/address
   toast('กำลังค้นหาสถานที่...','warning');
-  fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q + ' ศรีราชา ชลบุรี')}&limit=1`)
-    .then(r=>r.json())
-    .then(data=>{
-      if(data&&data.length){
-        const lat=parseFloat(data[0].lat);
-        const lng=parseFloat(data[0].lon);
-        if(_pickerMap&&_pickerMarker){
-          _pickerMap.setView([lat,lng],16);
-          _pickerMarker.setLatLng([lat,lng]);
-        }
-        updatePickerCoords(lat,lng);
-        toast('พบสถานที่: '+data[0].display_name.slice(0,35)+'...');
-      } else {
-        toast('ไม่พบสถานที่ ลองพิมพ์ชื่อหลัก เช่น "หนองค้อ", "หนองขาม", "ปิ่นทอง"','error');
+  geocodeAddressToPicker(q, false);
+}
+
+function geocodeAddressToPicker(rawQuery, isSilentIfNotFound){
+  if(!rawQuery) return;
+  let cleanQ = rawQuery.replace(/บ้านเลขที่\s*[\d\/\-]+/g, '')
+                       .replace(/เลขที่\s*[\d\/\-]+/g, '')
+                       .replace(/^\s*[\d\/\-]+\s*/g, '')
+                       .trim();
+  if(!cleanQ) cleanQ = rawQuery;
+
+  const queries = [
+    cleanQ + ' ศรีราชา ชลบุรี',
+    cleanQ + ' ชลบุรี',
+    cleanQ
+  ];
+
+  const trySearch = (idx) => {
+    if(idx >= queries.length){
+      if(!isSilentIfNotFound){
+        toast('ไม่พบสถานที่นี้ในแผนที่ ท่านสามารถคลิกบนแผนที่เพื่อปักหมุดบ้านได้โดยตรง','warning');
       }
-    })
-    .catch(()=>toast('ค้นหาสถานที่ไม่สำเร็จ กรุณาคลิกเลือกบนแผนที่โดยตรง','error'));
+      return;
+    }
+    const qStr = encodeURIComponent(queries[idx]);
+    fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${qStr}&limit=1`)
+      .then(r => r.json())
+      .then(data => {
+        if(data && data.length > 0){
+          const lat = parseFloat(data[0].lat);
+          const lng = parseFloat(data[0].lon);
+          if(_pickerMap && _pickerMarker){
+            _pickerMap.setView([lat, lng], 16);
+            _pickerMarker.setLatLng([lat, lng]);
+          }
+          updatePickerCoords(lat, lng);
+          toast('📍 พบตำแหน่ง: ' + (data[0].display_name.split(',')[0] || cleanQ), 'success');
+        } else {
+          trySearch(idx + 1);
+        }
+      })
+      .catch(() => {
+        if(idx === queries.length - 1 && !isSilentIfNotFound){
+          toast('ค้นหาสถานที่ไม่สำเร็จ กรุณาคลิกเลือกบนแผนที่โดยตรง','warning');
+        }
+      });
+  };
+
+  trySearch(0);
 }
 
 // ── COMMUNITY HEALTH GIS MAP MODAL ────────────────────
@@ -2724,8 +2842,8 @@ function confirmExcelImport() {
       <!-- Search & GPS toolbar -->
       <div style="display:flex; gap:8px; margin-bottom:10px; flex-wrap:wrap">
         <div style="flex:1; min-width:200px; display:flex; gap:4px">
-          <input id="picker-search-input" class="form-input" placeholder="ค้นหาสถานที่ เช่น วัดหนองค้อ, ปิ่นทอง..." style="font-size:12.5px" onkeydown="if(event.key==='Enter')searchPickerPlace()">
-          <button class="btn btn-outline btn-sm" onclick="searchPickerPlace()" style="white-space:nowrap">ค้นหา</button>
+          <input id="picker-search-input" class="form-input" placeholder="🔍 ค้นหาสถานที่, ซอย, หรือพิมพ์ชื่อ/HN คนไข้..." style="font-size:12.5px" onkeydown="if(event.key==='Enter')searchPickerPlace()">
+          <button class="btn btn-outline btn-sm" onclick="searchPickerPlace()" style="white-space:nowrap; background:var(--canvas)">🔍 ค้นหา</button>
         </div>
         <button class="btn btn-outline btn-sm" onclick="pickerGPS()" style="color:var(--teal-600); border-color:var(--teal-400); background:var(--teal-50); white-space:nowrap; display:flex; align-items:center; gap:4px">
           <span>📍</span> ดึง GPS ตรงนี้
@@ -2737,12 +2855,16 @@ function confirmExcelImport() {
 
       <!-- Footer info & Actions -->
       <div style="display:flex; justify-content:space-between; align-items:center; margin-top:12px; flex-wrap:wrap; gap:8px">
-        <div id="picker-marker-info" style="font-size:12px; color:var(--ink-700)">
-          พิกัดที่เลือก: Lat <span id="picker-lat-val" style="font-family:var(--mono); font-weight:700">-</span>, Lng <span id="picker-lng-val" style="font-family:var(--mono); font-weight:700">-</span>
+        <div id="picker-marker-info" style="font-size:12.5px; color:var(--ink-700); display:flex; align-items:center; gap:6px">
+          <span>📍 พิกัดที่เลือก:</span>
+          <strong style="font-family:var(--mono); color:var(--teal-700); background:var(--teal-50); padding:2px 8px; border-radius:4px; border:1px solid var(--teal-200);">
+            Lat <span id="picker-lat-val">-</span>, Lng <span id="picker-lng-val">-</span>
+          </strong>
+          <span style="font-size:11px; color:var(--slate-400)">(ลากหมุดหรือคลิกบนแผนที่เพื่อย้ายตำแหน่ง)</span>
         </div>
         <div style="display:flex; gap:8px">
           <button class="btn btn-secondary" onclick="closeMapPickerModal()">ยกเลิก</button>
-          <button class="btn btn-primary" onclick="confirmPickerLocation()" style="background:var(--teal-600)">✓ บันทึกพิกัดนี้ลงฟอร์ม</button>
+          <button id="btn-picker-confirm" class="btn btn-primary" onclick="confirmPickerLocation()" style="background:var(--teal-600); font-weight:600">✓ บันทึกพิกัดคนไข้</button>
         </div>
       </div>
     </div>
