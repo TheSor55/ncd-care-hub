@@ -350,7 +350,7 @@ body{font-family:var(--font);background:var(--canvas);color:var(--ink-800);line-
 .modal-close:hover{background:var(--slate-100);color:var(--ink-700)}
 
 /* ─── TOAST ─── */
-.toast{position:fixed;bottom:20px;right:20px;display:flex;align-items:center;gap:8px;padding:11px 16px;border-radius:var(--r-lg);font-size:13px;font-weight:500;z-index:999;transform:translateY(20px);opacity:0;transition:all .25s cubic-bezier(.4,0,.2,1);box-shadow:var(--shadow-lg);pointer-events:none;max-width:320px}
+.toast{position:fixed;bottom:20px;right:20px;display:flex;align-items:center;gap:8px;padding:11px 16px;border-radius:var(--r-lg);font-size:13px;font-weight:500;z-index:9999;transform:translateY(20px);opacity:0;transition:all .25s cubic-bezier(.4,0,.2,1);box-shadow:var(--shadow-lg);pointer-events:none;max-width:320px}
 .toast.show{transform:translateY(0);opacity:1}
 .toast-success{background:var(--ink-900);color:var(--white);border-left:3px solid var(--teal-400)}
 .toast-error{background:var(--ink-900);color:var(--white);border-left:3px solid var(--rose-400)}
@@ -1115,12 +1115,12 @@ function renderPtTable(){
   const q=(document.getElementById('pt-search')||{value:''}).value.toLowerCase();
   const sortVal=(document.getElementById('pt-sort')||{value:'name-asc'}).value;
   const riskOrder={low:0,moderate:1,high:2,vhigh:3};
-  let pts=DB.get('patients').filter(p=>!q||p.name.toLowerCase().includes(q)||p.hn.toLowerCase().includes(q)||(p.address||'').toLowerCase().includes(q));
+  let pts=DB.get('patients').filter(p=>!q||String(p.name||'').toLowerCase().includes(q)||String(p.hn||'').toLowerCase().includes(q)||(p.address||'').toLowerCase().includes(q));
   pts.sort((a,b)=>{
-    if(sortVal==='name-asc')return a.name.localeCompare(b.name,'th');
-    if(sortVal==='name-desc')return b.name.localeCompare(a.name,'th');
-    if(sortVal==='hn-asc')return a.hn.localeCompare(b.hn,'th',{numeric:true});
-    if(sortVal==='hn-desc')return b.hn.localeCompare(a.hn,'th',{numeric:true});
+    if(sortVal==='name-asc')return String(a.name||'').localeCompare(String(b.name||''),'th');
+    if(sortVal==='name-desc')return String(b.name||'').localeCompare(String(a.name||''),'th');
+    if(sortVal==='hn-asc')return String(a.hn||'').localeCompare(String(b.hn||''),'th',{numeric:true});
+    if(sortVal==='hn-desc')return String(b.hn||'').localeCompare(String(a.hn||''),'th',{numeric:true});
     if(sortVal==='age-asc')return (a.dob?calcAgeFromDob(a.dob):parseInt(a.age||0))-(b.dob?calcAgeFromDob(b.dob):parseInt(b.age||0));
     if(sortVal==='age-desc')return (b.dob?calcAgeFromDob(b.dob):parseInt(b.age||0))-(a.dob?calcAgeFromDob(a.dob):parseInt(a.age||0));
     if(sortVal==='risk-desc')return (riskOrder[b.ckdResult?.risk]||0)-(riskOrder[a.ckdResult?.risk]||0);
@@ -1286,23 +1286,23 @@ function pickerSelectPatient(id){
   if(!p) return;
   _pickerTargetPatientId = p.id;
   
+  const pHn = String(p.hn != null ? p.hn : '').trim();
+  const pName = String(p.name != null ? p.name : '').trim();
+
   const elHn = document.getElementById('picker-patient-hn');
   const elName = document.getElementById('picker-patient-name');
-  if(elHn) elHn.textContent = p.hn ? `HN ${p.hn}` : 'ไม่มี HN';
-  if(elName) elName.textContent = p.name || 'ไม่ระบุชื่อ';
+  if(elHn) elHn.textContent = pHn ? `HN ${pHn}` : 'ไม่มี HN';
+  if(elName) elName.textContent = pName || 'ไม่ระบุชื่อ';
   
   const sel = document.getElementById('picker-patient-select');
   if(sel) sel.value = String(p.id);
 
   const btnConfirm = document.getElementById('btn-picker-confirm');
   if(btnConfirm) {
-    btnConfirm.textContent = `✓ บันทึกพิกัด (HN ${p.hn})`;
+    btnConfirm.textContent = `✓ บันทึกพิกัด (${pHn ? 'HN ' + pHn : pName})`;
   }
 
-  const sInput = document.getElementById('picker-search-input');
-  if(sInput){
-    sInput.value = p.address || '';
-  }
+  const statusEl = document.getElementById('picker-search-status');
 
   const hasCoord = p.lat && p.lng && Number.isFinite(Number(p.lat)) && Number.isFinite(Number(p.lng)) && Number(p.lat) !== 0 && Number(p.lng) !== 0;
   
@@ -1314,13 +1314,28 @@ function pickerSelectPatient(id){
       _pickerMarker.setLatLng([lat, lng]);
     }
     updatePickerCoords(lat, lng);
-    toast(`📍 โหลดพิกัดเดิม: HN ${p.hn} (${p.name})`, 'success');
+    toast(`📍 โหลดพิกัดเดิม: HN ${pHn} (${pName})`, 'success');
+    if(statusEl){
+      statusEl.style.display = 'block';
+      statusEl.style.color = 'var(--teal-700)';
+      statusEl.innerHTML = `✅ พบผู้ป่วย: <strong>HN ${pHn} ${pName}</strong> (พิกัดเดิม: ${p.lat}, ${p.lng})`;
+    }
   } else {
-    if(p.address && p.address.trim()){
-      toast(`ℹ️ กำลังค้นหาตำแหน่งตามที่อยู่: ${p.address}...`);
-      geocodeAddressToPicker(p.address, true);
+    if(p.address && String(p.address).trim()){
+      toast(`ℹ️ พบ HN ${pHn} (${pName}) — ค้นหาตำแหน่งตามที่อยู่: ${p.address}...`);
+      if(statusEl){
+        statusEl.style.display = 'block';
+        statusEl.style.color = 'var(--blue-600)';
+        statusEl.innerHTML = `ℹ️ กำลังค้นหาพิกัดตามที่อยู่: <strong>${escHtml(p.address)}</strong>...`;
+      }
+      geocodeAddressToPicker(String(p.address), true);
     } else {
-      toast(`ℹ️ HN ${p.hn} (${p.name}) ยังไม่มีพิกัด — กรุณาคลิกบนแผนที่เพื่อปักหมุดบ้าน`, 'warning');
+      toast(`ℹ️ พบ HN ${pHn} (${pName}) แต่ยังไม่มีพิกัด — กรุณาคลิกบนแผนที่เพื่อปักหมุดบ้าน`, 'warning');
+      if(statusEl){
+        statusEl.style.display = 'block';
+        statusEl.style.color = 'var(--amber-700)';
+        statusEl.innerHTML = `⚠️ พบผู้ป่วย: <strong>HN ${pHn} ${pName}</strong> <span style="font-weight:600">(ยังไม่มีพิกัด — กรุณาคลิกบนแผนที่เพื่อปักหมุดบ้าน)</span>`;
+      }
       if(_pickerMarker){
         const cur = _pickerMarker.getLatLng();
         updatePickerCoords(cur.lat, cur.lng);
@@ -1333,6 +1348,12 @@ function openMapPickerModal(targetId){
   const modal=document.getElementById('map-picker-modal');
   modal.style.display='flex';
   
+  const statusEl = document.getElementById('picker-search-status');
+  if(statusEl){
+    statusEl.style.display = 'none';
+    statusEl.innerHTML = '';
+  }
+
   populatePickerPatientSelect(targetId);
 
   let initialLat = 13.1388;
@@ -1345,12 +1366,14 @@ function openMapPickerModal(targetId){
     _pickerTargetPatientId = Number(targetId);
     const p = DB.get('patients').find(x => x.id === _pickerTargetPatientId);
     if(p){
-      document.getElementById('picker-patient-hn').textContent = p.hn ? `HN ${p.hn}` : 'ไม่มี HN';
-      document.getElementById('picker-patient-name').textContent = p.name || 'ไม่ระบุชื่อ';
+      const pHn = String(p.hn != null ? p.hn : '').trim();
+      const pName = String(p.name != null ? p.name : '').trim();
+      document.getElementById('picker-patient-hn').textContent = pHn ? `HN ${pHn}` : 'ไม่มี HN';
+      document.getElementById('picker-patient-name').textContent = pName || 'ไม่ระบุชื่อ';
       document.getElementById('picker-search-input').value = p.address || '';
       document.getElementById('picker-patient-select').value = String(p.id);
 
-      if(btnConfirm) btnConfirm.textContent = `✓ บันทึกพิกัด (HN ${p.hn})`;
+      if(btnConfirm) btnConfirm.textContent = `✓ บันทึกพิกัด (${pHn ? 'HN ' + pHn : pName})`;
 
       if(p.lat && p.lng && Number.isFinite(Number(p.lat)) && Number.isFinite(Number(p.lng)) && Number(p.lat) !== 0 && Number(p.lng) !== 0){
         initialLat = Number(p.lat);
@@ -1501,20 +1524,28 @@ function searchPickerPlace(){
   // If input is empty but we have an active patient with an address, use their address
   if(!q && _pickerTargetPatientId){
     const p = DB.get('patients').find(x => x.id === _pickerTargetPatientId);
-    if(p && p.address) q = p.address.trim();
+    if(p && p.address) q = String(p.address).trim();
   }
 
+  const statusEl = document.getElementById('picker-search-status');
   if(!q){
+    if(statusEl){
+      statusEl.style.display = 'block';
+      statusEl.style.color = 'var(--amber-700)';
+      statusEl.innerHTML = '⚠️ กรุณาพิมพ์ชื่อคนไข้, HN, หรือชื่อสถานที่/ซอยที่ต้องการค้นหา';
+    }
     return toast('พิมพ์ชื่อคนไข้, HN, หรือชื่อสถานที่/ซอยที่ต้องการค้นหา','warning');
   }
 
-  // 1. Check if q matches a patient in database (by HN or Name)
+  const qLower = q.toLowerCase();
   const pts = DB.get('patients');
-  const matchedPt = pts.find(p => 
-    (p.hn && p.hn.toLowerCase() === q.toLowerCase()) ||
-    (p.name && p.name.toLowerCase().includes(q.toLowerCase())) ||
-    (p.hn && p.hn.includes(q))
-  );
+
+  // 1. Check if q matches a patient in database (by HN or Name) safely!
+  const matchedPt = pts.find(p => {
+    const pHn = String(p.hn != null ? p.hn : '').trim().toLowerCase();
+    const pName = String(p.name != null ? p.name : '').trim().toLowerCase();
+    return pHn === qLower || pName.includes(qLower) || (pHn && (pHn.includes(qLower) || qLower.includes(pHn)));
+  });
 
   if(matchedPt){
     pickerSelectPatient(matchedPt.id);
@@ -1522,17 +1553,23 @@ function searchPickerPlace(){
   }
 
   // 2. Search as place/address
+  if(statusEl){
+    statusEl.style.display = 'block';
+    statusEl.style.color = 'var(--blue-600)';
+    statusEl.innerHTML = `🔍 กำลังค้นหาสถานที่ "<strong>${escHtml(q)}</strong>"...`;
+  }
   toast('กำลังค้นหาสถานที่...','warning');
   geocodeAddressToPicker(q, false);
 }
 
 function geocodeAddressToPicker(rawQuery, isSilentIfNotFound){
   if(!rawQuery) return;
-  let cleanQ = rawQuery.replace(/บ้านเลขที่\s*[\d\/\-]+/g, '')
-                       .replace(/เลขที่\s*[\d\/\-]+/g, '')
-                       .replace(/^\s*[\d\/\-]+\s*/g, '')
-                       .trim();
-  if(!cleanQ) cleanQ = rawQuery;
+  const statusEl = document.getElementById('picker-search-status');
+  let cleanQ = String(rawQuery).replace(/บ้านเลขที่\s*[\d\/\-]+/g, '')
+                               .replace(/เลขที่\s*[\d\/\-]+/g, '')
+                               .replace(/^\s*[\d\/\-]+\s*/g, '')
+                               .trim();
+  if(!cleanQ) cleanQ = String(rawQuery).trim();
 
   const queries = [
     cleanQ + ' ศรีราชา ชลบุรี',
@@ -1544,6 +1581,11 @@ function geocodeAddressToPicker(rawQuery, isSilentIfNotFound){
     if(idx >= queries.length){
       if(!isSilentIfNotFound){
         toast('ไม่พบสถานที่นี้ในแผนที่ ท่านสามารถคลิกบนแผนที่เพื่อปักหมุดบ้านได้โดยตรง','warning');
+        if(statusEl){
+          statusEl.style.display = 'block';
+          statusEl.style.color = 'var(--rose-600)';
+          statusEl.innerHTML = `⚠️ ไม่พบสถานที่ "<strong>${escHtml(rawQuery)}</strong>" — กรุณาคลิกบนแผนที่หรือลากหมุดไปที่บ้านคนไข้โดยตรง`;
+        }
       }
       return;
     }
@@ -1559,7 +1601,13 @@ function geocodeAddressToPicker(rawQuery, isSilentIfNotFound){
             _pickerMarker.setLatLng([lat, lng]);
           }
           updatePickerCoords(lat, lng);
-          toast('📍 พบตำแหน่ง: ' + (data[0].display_name.split(',')[0] || cleanQ), 'success');
+          const placeTitle = data[0].display_name.split(',')[0] || cleanQ;
+          toast('📍 พบตำแหน่ง: ' + placeTitle, 'success');
+          if(statusEl){
+            statusEl.style.display = 'block';
+            statusEl.style.color = 'var(--teal-700)';
+            statusEl.innerHTML = `📍 พบสถานที่: <strong>${escHtml(placeTitle)}</strong> (เลื่อนแผนที่มายังบริเวณนี้แล้ว)`;
+          }
         } else {
           trySearch(idx + 1);
         }
@@ -1624,7 +1672,7 @@ function renderCommunityPatientList(){
     if(filterGps==='missing'&&hasCoord) return false;
     if(filterGps==='has-gps'&&!hasCoord) return false;
     if(q){
-      const match = (p.name||'').toLowerCase().includes(q) || (p.hn||'').toLowerCase().includes(q) || (p.address||'').toLowerCase().includes(q);
+      const match = String(p.name||'').toLowerCase().includes(q) || String(p.hn||'').toLowerCase().includes(q) || String(p.address||'').toLowerCase().includes(q);
       if(!match) return false;
     }
     return true;
@@ -2840,14 +2888,17 @@ function confirmExcelImport() {
       </div>
 
       <!-- Search & GPS toolbar -->
-      <div style="display:flex; gap:8px; margin-bottom:10px; flex-wrap:wrap">
-        <div style="flex:1; min-width:200px; display:flex; gap:4px">
-          <input id="picker-search-input" class="form-input" placeholder="🔍 ค้นหาสถานที่, ซอย, หรือพิมพ์ชื่อ/HN คนไข้..." style="font-size:12.5px" onkeydown="if(event.key==='Enter')searchPickerPlace()">
-          <button class="btn btn-outline btn-sm" onclick="searchPickerPlace()" style="white-space:nowrap; background:var(--canvas)">🔍 ค้นหา</button>
+      <div style="margin-bottom:10px;">
+        <div style="display:flex; gap:8px; flex-wrap:wrap">
+          <div style="flex:1; min-width:200px; display:flex; gap:4px">
+            <input id="picker-search-input" class="form-input" placeholder="🔍 พิมพ์ HN, ชื่อคนไข้, หรือสถานที่/ซอย..." style="font-size:12.5px" onkeydown="if(event.key==='Enter'){event.preventDefault();searchPickerPlace();}">
+            <button class="btn btn-outline btn-sm" onclick="searchPickerPlace()" style="white-space:nowrap; background:var(--canvas); font-weight:600">🔍 ค้นหา</button>
+          </div>
+          <button class="btn btn-outline btn-sm" onclick="pickerGPS()" style="color:var(--teal-600); border-color:var(--teal-400); background:var(--teal-50); white-space:nowrap; display:flex; align-items:center; gap:4px">
+            <span>📍</span> ดึง GPS ตรงนี้
+          </button>
         </div>
-        <button class="btn btn-outline btn-sm" onclick="pickerGPS()" style="color:var(--teal-600); border-color:var(--teal-400); background:var(--teal-50); white-space:nowrap; display:flex; align-items:center; gap:4px">
-          <span>📍</span> ดึง GPS ตรงนี้
-        </button>
+        <div id="picker-search-status" style="display:none; font-size:12px; margin-top:6px; padding:6px 10px; border-radius:6px; background:var(--canvas); border:1px solid var(--slate-100)"></div>
       </div>
 
       <!-- Canvas -->
