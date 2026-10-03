@@ -1517,6 +1517,17 @@ function pickerGPS(){
   );
 }
 
+function openCurrentSearchInGoogleMaps(){
+  const sInput = document.getElementById('picker-search-input');
+  let q = (sInput ? sInput.value : '').trim();
+  if(!q && _pickerTargetPatientId){
+    const p = DB.get('patients').find(x => x.id === _pickerTargetPatientId);
+    if(p && p.address) q = String(p.address).trim();
+  }
+  if(!q) return toast('กรุณาระบุที่อยู่หรือสถานที่ก่อนเปิด Google Maps','warning');
+  window.open('https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(q + ' ชลบุรี'), '_blank');
+}
+
 function searchPickerPlace(){
   const sInput = document.getElementById('picker-search-input');
   let q = (sInput ? sInput.value : '').trim();
@@ -1532,15 +1543,36 @@ function searchPickerPlace(){
     if(statusEl){
       statusEl.style.display = 'block';
       statusEl.style.color = 'var(--amber-700)';
-      statusEl.innerHTML = '⚠️ กรุณาพิมพ์ชื่อคนไข้, HN, หรือชื่อสถานที่/ซอยที่ต้องการค้นหา';
+      statusEl.innerHTML = '⚠️ กรุณาพิมพ์ที่อยู่, ชื่อคนไข้, HN, หรือพิกัดที่ต้องการค้นหา';
     }
-    return toast('พิมพ์ชื่อคนไข้, HN, หรือชื่อสถานที่/ซอยที่ต้องการค้นหา','warning');
+    return toast('พิมพ์ที่อยู่, ชื่อคนไข้, HN, หรือพิกัดที่ต้องการค้นหา','warning');
+  }
+
+  // 1. Check if user entered direct GPS coordinates: e.g. "13.139081, 100.994568"
+  const coordMatch = q.match(/^(-?\d+\.\d+)[\s,]+(-?\d+\.\d+)$/);
+  if(coordMatch){
+    const lat = parseFloat(coordMatch[1]);
+    const lng = parseFloat(coordMatch[2]);
+    if(Number.isFinite(lat) && Number.isFinite(lng)){
+      if(_pickerMap && _pickerMarker){
+        _pickerMap.setView([lat, lng], 17);
+        _pickerMarker.setLatLng([lat, lng]);
+      }
+      updatePickerCoords(lat, lng);
+      toast(`📍 ไปยังพิกัด: ${lat.toFixed(6)}, ${lng.toFixed(6)}`, 'success');
+      if(statusEl){
+        statusEl.style.display = 'block';
+        statusEl.style.color = 'var(--teal-700)';
+        statusEl.innerHTML = `📍 กำหนดพิกัดตรงตามที่ระบุ: <strong>${lat.toFixed(6)}, ${lng.toFixed(6)}</strong>`;
+      }
+      return;
+    }
   }
 
   const qLower = q.toLowerCase();
   const pts = DB.get('patients');
 
-  // 1. Check if q matches a patient in database (by HN or Name) safely!
+  // 2. Check if q matches a patient in database (by HN or Name) safely!
   const matchedPt = pts.find(p => {
     const pHn = String(p.hn != null ? p.hn : '').trim().toLowerCase();
     const pName = String(p.name != null ? p.name : '').trim().toLowerCase();
@@ -1552,70 +1584,95 @@ function searchPickerPlace(){
     return;
   }
 
-  // 2. Search as place/address
+  // 3. Search as address / landmark with Thai address intelligent decomposition
   if(statusEl){
     statusEl.style.display = 'block';
     statusEl.style.color = 'var(--blue-600)';
-    statusEl.innerHTML = `🔍 กำลังค้นหาสถานที่ "<strong>${escHtml(q)}</strong>"...`;
+    statusEl.innerHTML = `🔍 กำลังค้นหาตำแหน่ง "<strong>${escHtml(q)}</strong>"...`;
   }
-  toast('กำลังค้นหาสถานที่...','warning');
+  toast('กำลังค้นหาตำแหน่ง...','warning');
   geocodeAddressToPicker(q, false);
 }
 
 function geocodeAddressToPicker(rawQuery, isSilentIfNotFound){
   if(!rawQuery) return;
   const statusEl = document.getElementById('picker-search-status');
-  let cleanQ = String(rawQuery).replace(/บ้านเลขที่\s*[\d\/\-]+/g, '')
-                               .replace(/เลขที่\s*[\d\/\-]+/g, '')
-                               .replace(/^\s*[\d\/\-]+\s*/g, '')
-                               .trim();
-  if(!cleanQ) cleanQ = String(rawQuery).trim();
+  const raw = String(rawQuery).trim();
 
-  const queries = [
-    cleanQ + ' ศรีราชา ชลบุรี',
-    cleanQ + ' ชลบุรี',
-    cleanQ
-  ];
+  // Intelligent Thai address decomposition
+  const candidates = [];
+  let cleanQ = raw.replace(/\b\d+\/\d+\b/g, '')
+                  .replace(/\b\d{5}\b/g, '')
+                  .replace(/บ้านเลขที่\s*[\d\/\-]+/g, '')
+                  .replace(/เลขที่\s*[\d\/\-]+/g, '')
+                  .replace(/ม\.\s*\d+/g, '')
+                  .replace(/หมู่\s*(ที่)?\s*\d+/g, '')
+                  .trim();
+
+  let tambon = '';
+  let amphoe = 'ศรีราชา';
+  const tm = raw.match(/(?:ต\.|ตำบล)\s*([^\s,]+)/);
+  if(tm) tambon = tm[1];
+  const am = raw.match(/(?:อ\.|อำเภอ)\s*([^\s,]+)/);
+  if(am) amphoe = am[1];
+
+  const vm = raw.match(/บ้าน([^\s,]+)/);
+  if(vm) candidates.push('บ้าน' + vm[1] + ' ' + amphoe);
+  if(tambon) {
+    candidates.push('ตำบล' + tambon + ' ' + amphoe);
+    candidates.push(tambon + ' ' + amphoe + ' ชลบุรี');
+    candidates.push(tambon + ' ชลบุรี');
+  }
+  if(cleanQ && cleanQ !== raw) {
+    candidates.push(cleanQ + ' ศรีราชา ชลบุรี');
+    candidates.push(cleanQ);
+  }
+  candidates.push(raw + ' ศรีราชา ชลบุรี');
+  candidates.push(raw);
+
+  const uniqueCandidates = [...new Set(candidates.filter(Boolean))];
 
   const trySearch = (idx) => {
-    if(idx >= queries.length){
+    if(idx >= uniqueCandidates.length){
       if(!isSilentIfNotFound){
-        toast('ไม่พบสถานที่นี้ในแผนที่ ท่านสามารถคลิกบนแผนที่เพื่อปักหมุดบ้านได้โดยตรง','warning');
+        toast('ไม่พบพิกัดหลังคาบ้าน กรุณาคลิกเลือกบนแผนที่ หรือเปิดดู Google Maps','warning');
         if(statusEl){
           statusEl.style.display = 'block';
-          statusEl.style.color = 'var(--rose-600)';
-          statusEl.innerHTML = `⚠️ ไม่พบสถานที่ "<strong>${escHtml(rawQuery)}</strong>" — กรุณาคลิกบนแผนที่หรือลากหมุดไปที่บ้านคนไข้โดยตรง`;
+          statusEl.style.color = 'var(--amber-700)';
+          const gmapsUrl = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(rawQuery + ' ชลบุรี');
+          statusEl.innerHTML = `⚠️ ไม่พบพิกัดหลังคาบ้านเป๊ะๆ จากแผนที่ออนไลน์ <a href="${gmapsUrl}" target="_blank" style="color:var(--blue-600);text-decoration:underline;font-weight:600;margin-left:6px">🚗 เปิดดูตำแหน่งใน Google Maps</a><br><span style="color:var(--slate-500);font-size:11.5px">💡 ท่านสามารถคลิกบนแผนที่เพื่อปักหมุดบ้านคนไข้ได้ทันที</span>`;
         }
       }
       return;
     }
-    const qStr = encodeURIComponent(queries[idx]);
+
+    const qStr = encodeURIComponent(uniqueCandidates[idx]);
     fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${qStr}&limit=1`)
       .then(r => r.json())
       .then(data => {
         if(data && data.length > 0){
           const lat = parseFloat(data[0].lat);
           const lng = parseFloat(data[0].lon);
+          const zoom = tambon ? 15 : 16;
           if(_pickerMap && _pickerMarker){
-            _pickerMap.setView([lat, lng], 16);
+            _pickerMap.setView([lat, lng], zoom);
             _pickerMarker.setLatLng([lat, lng]);
           }
           updatePickerCoords(lat, lng);
-          const placeTitle = data[0].display_name.split(',')[0] || cleanQ;
-          toast('📍 พบตำแหน่ง: ' + placeTitle, 'success');
+          const placeTitle = data[0].display_name.split(',')[0] || uniqueCandidates[idx];
+          toast('📍 พบพื้นที่: ' + placeTitle, 'success');
           if(statusEl){
             statusEl.style.display = 'block';
             statusEl.style.color = 'var(--teal-700)';
-            statusEl.innerHTML = `📍 พบสถานที่: <strong>${escHtml(placeTitle)}</strong> (เลื่อนแผนที่มายังบริเวณนี้แล้ว)`;
+            const gmapsUrl = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(rawQuery + ' ชลบุรี');
+            statusEl.innerHTML = `📍 พบพื้นที่: <strong>${escHtml(placeTitle)}</strong> (ซูมเข้ายังชุมชนคนไข้แล้ว — คลิกบนหลังคาบ้านคนไข้เพื่อปักหมุด) <a href="${gmapsUrl}" target="_blank" style="color:var(--blue-600);text-decoration:underline;font-size:11.5px;margin-left:6px">🚗 ดูที่อยู่บน Google Maps</a>`;
           }
         } else {
           trySearch(idx + 1);
         }
       })
       .catch(() => {
-        if(idx === queries.length - 1 && !isSilentIfNotFound){
-          toast('ค้นหาสถานที่ไม่สำเร็จ กรุณาคลิกเลือกบนแผนที่โดยตรง','warning');
-        }
+        trySearch(idx + 1);
       });
   };
 
@@ -2891,9 +2948,12 @@ function confirmExcelImport() {
       <div style="margin-bottom:10px;">
         <div style="display:flex; gap:8px; flex-wrap:wrap">
           <div style="flex:1; min-width:200px; display:flex; gap:4px">
-            <input id="picker-search-input" class="form-input" placeholder="🔍 พิมพ์ HN, ชื่อคนไข้, หรือสถานที่/ซอย..." style="font-size:12.5px" onkeydown="if(event.key==='Enter'){event.preventDefault();searchPickerPlace();}">
+            <input id="picker-search-input" class="form-input" placeholder="🔍 พิมพ์ที่อยู่, HN, ชื่อคนไข้, หรือพิกัด..." style="font-size:12.5px" onkeydown="if(event.key==='Enter'){event.preventDefault();searchPickerPlace();}">
             <button class="btn btn-outline btn-sm" onclick="searchPickerPlace()" style="white-space:nowrap; background:var(--canvas); font-weight:600">🔍 ค้นหา</button>
           </div>
+          <button class="btn btn-outline btn-sm" onclick="openCurrentSearchInGoogleMaps()" style="color:var(--blue-600); border-color:var(--blue-300); background:var(--blue-50); white-space:nowrap; display:flex; align-items:center; gap:4px" title="เปิดที่อยู่นี้บน Google Maps เพื่อดูแผนที่ดาวเทียม">
+            <span>🚗</span> Google Maps
+          </button>
           <button class="btn btn-outline btn-sm" onclick="pickerGPS()" style="color:var(--teal-600); border-color:var(--teal-400); background:var(--teal-50); white-space:nowrap; display:flex; align-items:center; gap:4px">
             <span>📍</span> ดึง GPS ตรงนี้
           </button>
