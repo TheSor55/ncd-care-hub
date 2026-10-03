@@ -1253,9 +1253,77 @@ function loadLeaflet(callback){
 }
 
 // ── MAP PICKER MODAL ──────────────────────────────────
-function openMapPickerModal(){
+let _pickerTargetPatientId = null;
+
+function populatePickerPatientSelect(selectedId){
+  const select = document.getElementById('picker-patient-select');
+  if(!select) return;
+  const pts = DB.get('patients');
+  select.innerHTML = '<option value="">— เลือก/เปลี่ยนคนไข้ —</option>' + pts.map(p => {
+    const hasGps = p.lat && p.lng && Number.isFinite(Number(p.lat)) && Number.isFinite(Number(p.lng));
+    const icon = hasGps ? '📍' : '⚪';
+    return `<option value="${p.id}" ${p.id === Number(selectedId) ? 'selected' : ''}>${icon} ${escHtml(p.hn)} - ${escHtml(p.name)}</option>`;
+  }).join('');
+}
+
+function pickerSelectPatient(id){
+  if(!id) return;
+  const p = DB.get('patients').find(x => x.id === Number(id));
+  if(!p) return;
+  _pickerTargetPatientId = p.id;
+  document.getElementById('picker-patient-hn').textContent = p.hn ? `HN ${p.hn}` : 'ไม่มี HN';
+  document.getElementById('picker-patient-name').textContent = p.name || 'ไม่ระบุชื่อ';
+  
+  if(p.address){
+    document.getElementById('picker-search-input').value = p.address;
+  }
+  
+  const hasCoord = p.lat && p.lng && Number.isFinite(Number(p.lat)) && Number.isFinite(Number(p.lng));
+  const lat = hasCoord ? Number(p.lat) : 13.1388;
+  const lng = hasCoord ? Number(p.lng) : 100.9955;
+  const zoom = hasCoord ? 17 : 14;
+  
+  if(_pickerMap && _pickerMarker){
+    _pickerMap.setView([lat, lng], zoom);
+    _pickerMarker.setLatLng([lat, lng]);
+  }
+  updatePickerCoords(lat, lng);
+}
+
+function openMapPickerModal(targetId){
   const modal=document.getElementById('map-picker-modal');
   modal.style.display='flex';
+  
+  populatePickerPatientSelect(targetId);
+
+  if (targetId) {
+    _pickerTargetPatientId = Number(targetId);
+    const p = DB.get('patients').find(x => x.id === _pickerTargetPatientId);
+    if(p){
+      document.getElementById('picker-patient-hn').textContent = p.hn ? `HN ${p.hn}` : 'ไม่มี HN';
+      document.getElementById('picker-patient-name').textContent = p.name || 'ไม่ระบุชื่อ';
+      if(p.address){
+        document.getElementById('picker-search-input').value = p.address;
+      }
+      document.getElementById('picker-patient-select').value = String(p.id);
+    }
+  } else {
+    const eid = parseInt(document.getElementById('f-edit-id')?.value) || 0;
+    _pickerTargetPatientId = eid > 0 ? eid : null;
+    const hn = (document.getElementById('f-hn')?.value || '').trim();
+    const name = (document.getElementById('f-name')?.value || '').trim();
+    const addr = (document.getElementById('f-address')?.value || '').trim();
+
+    document.getElementById('picker-patient-hn').textContent = hn ? `HN ${hn}` : 'ผู้ป่วยใหม่';
+    document.getElementById('picker-patient-name').textContent = name ? name : 'ยังไม่ระบุชื่อ';
+    if(addr){
+      document.getElementById('picker-search-input').value = addr;
+    }
+    if(_pickerTargetPatientId){
+      document.getElementById('picker-patient-select').value = String(_pickerTargetPatientId);
+    }
+  }
+
   loadLeaflet(()=>{
     setTimeout(()=>initPickerMap(),100);
   });
@@ -1266,9 +1334,17 @@ function closeMapPickerModal(){
 }
 
 function initPickerMap(){
-  const curLat=parseFloat(document.getElementById('f-lat').value);
-  const curLng=parseFloat(document.getElementById('f-lng').value);
-  // Default to Nong Kho Health Center: 13.1388, 100.9955
+  let curLat = parseFloat(document.getElementById('f-lat')?.value);
+  let curLng = parseFloat(document.getElementById('f-lng')?.value);
+
+  if(_pickerTargetPatientId){
+    const p = DB.get('patients').find(x => x.id === _pickerTargetPatientId);
+    if(p && p.lat && p.lng && Number.isFinite(Number(p.lat)) && Number.isFinite(Number(p.lng))){
+      curLat = Number(p.lat);
+      curLng = Number(p.lng);
+    }
+  }
+
   const hasCoord=Number.isFinite(curLat)&&Number.isFinite(curLng)&&curLat!==0&&curLng!==0;
   const startLat=hasCoord?curLat:13.1388;
   const startLng=hasCoord?curLng:100.9955;
@@ -1311,9 +1387,29 @@ function confirmPickerLocation(){
   const lat=document.getElementById('picker-lat-val').textContent;
   const lng=document.getElementById('picker-lng-val').textContent;
   if(lat!=='-'&&lng!=='-'){
-    document.getElementById('f-lat').value=lat;
-    document.getElementById('f-lng').value=lng;
-    toast(`ปักหมุดสำเร็จ: ${lat}, ${lng}`);
+    if(_pickerTargetPatientId){
+      const pts=DB.get('patients');
+      const p=pts.find(x=>x.id===_pickerTargetPatientId);
+      if(p){
+        p.lat=lat;
+        p.lng=lng;
+        DB.set('patients',pts);
+        toast(`บันทึกพิกัดสำเร็จ: HN ${p.hn} (${lat}, ${lng})`,'success');
+        renderPtTable();
+        if(document.getElementById('community-map-modal').style.display==='flex'){
+          renderCommunityMarkers();
+        }
+      }
+    }
+    const fLat=document.getElementById('f-lat');
+    const fLng=document.getElementById('f-lng');
+    if(fLat&&fLng){
+      fLat.value=lat;
+      fLng.value=lng;
+    }
+    if(!_pickerTargetPatientId){
+      toast(`ปักหมุดสำเร็จ: ${lat}, ${lng}`,'success');
+    }
   }
   closeMapPickerModal();
 }
@@ -1398,6 +1494,52 @@ function filterCommunityMap(type){
   renderCommunityMarkers();
 }
 
+function renderCommunityPatientList(){
+  const listEl=document.getElementById('gis-patient-list');
+  if(!listEl) return;
+  const q=(document.getElementById('gis-patient-search')?.value||'').trim().toLowerCase();
+  const filterGps=document.getElementById('gis-patient-filter-gps')?.value||'missing';
+  
+  const pts=DB.get('patients');
+  const filtered=pts.filter(p=>{
+    const hasCoord=p.lat&&p.lng&&Number.isFinite(Number(p.lat))&&Number.isFinite(Number(p.lng));
+    if(filterGps==='missing'&&hasCoord) return false;
+    if(filterGps==='has-gps'&&!hasCoord) return false;
+    if(q){
+      const match = (p.name||'').toLowerCase().includes(q) || (p.hn||'').toLowerCase().includes(q) || (p.address||'').toLowerCase().includes(q);
+      if(!match) return false;
+    }
+    return true;
+  });
+
+  if(!filtered.length){
+    listEl.innerHTML='<div style="color:var(--slate-300);text-align:center;padding:10px">ไม่พบรายชื่อในเงื่อนไขนี้</div>';
+    return;
+  }
+
+  listEl.innerHTML=filtered.map(p=>{
+    const hasCoord=p.lat&&p.lng&&Number.isFinite(Number(p.lat))&&Number.isFinite(Number(p.lng));
+    const gmapsUrl=getGoogleMapsUrl(p);
+    return `
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 8px;background:var(--white);border-radius:4px;border:1px solid var(--slate-100);gap:8px">
+        <div style="display:flex;align-items:center;gap:6px;overflow:hidden">
+          <span class="tag tag-blue font-mono" style="font-size:11px">${escHtml(p.hn)}</span>
+          <strong style="color:var(--ink-800);white-space:nowrap">${escHtml(p.name)}</strong>
+          <span style="color:var(--slate-300);font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.address ? '🏠 ' + escHtml(p.address) : (p.disease||'')}</span>
+        </div>
+        <div style="display:flex;gap:4px;flex-shrink:0">
+          ${hasCoord ? `
+            <button onclick="window.open('${gmapsUrl}','_blank')" class="btn btn-outline btn-sm" style="font-size:10.5px;padding:2px 6px;color:var(--blue-600);border-color:var(--blue-200);background:var(--blue-50)">🚗 Maps</button>
+            <button onclick="openMapPickerModal(${p.id})" class="btn btn-outline btn-sm" style="font-size:10.5px;padding:2px 6px;color:var(--teal-600);border-color:var(--teal-300)">✎ แก้พิกัด</button>
+          ` : `
+            <button onclick="openMapPickerModal(${p.id})" class="btn btn-primary btn-sm" style="font-size:11px;padding:2px 8px;background:var(--teal-600)">📍 ปักหมุดบ้าน</button>
+          `}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
 function renderCommunityMarkers(){
   if(!_communityMap||!window.L) return;
   if(_communityLayer){
@@ -1455,8 +1597,8 @@ function renderCommunityMarkers(){
           <button onclick="window.open('${gmapsUrl}','_blank')" style="background:var(--blue-600);color:#fff;border:none;padding:5px 10px;border-radius:4px;font-size:11px;font-weight:600;cursor:pointer;flex:1;display:flex;align-items:center;justify-content:center;gap:3px">
             🚗 Google Maps
           </button>
-          <button onclick="closeCommunityMapModal();dashboardOpenPatient(${p.id})" style="background:var(--teal-50);color:var(--teal-600);border:1px solid var(--teal-200);padding:5px 8px;border-radius:4px;font-size:11px;font-weight:600;cursor:pointer">
-            ข้อมูล
+          <button onclick="closeCommunityMapModal();openMapPickerModal(${p.id})" style="background:var(--teal-50);color:var(--teal-600);border:1px solid var(--teal-200);padding:5px 8px;border-radius:4px;font-size:11px;font-weight:600;cursor:pointer">
+            ✎ ย้ายหมุด
           </button>
         </div>
       </div>
@@ -1472,6 +1614,8 @@ function renderCommunityMarkers(){
   if(totalEl) totalEl.textContent=pts.length+' ราย';
   if(gpsEl) gpsEl.textContent=validCount+' หลังคาเรือน';
   if(highEl) highEl.textContent=highRiskCount+' ราย';
+
+  renderCommunityPatientList();
 
   if(bounds.length>0){
     _communityMap.fitBounds(bounds,{padding:[40,40],maxZoom:16});
@@ -2560,10 +2704,19 @@ function confirmExcelImport() {
   <!-- ─── MAP PICKER MODAL ─── -->
   <div class="modal-bg" id="map-picker-modal" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.6); backdrop-filter:blur(4px); z-index:2000; align-items:center; justify-content:center;">
     <div class="modal-content" style="background:var(--white); border-radius:12px; padding:20px; max-width:720px; width:94%; box-shadow:0 20px 25px -5px rgba(0,0,0,0.2); display:flex; flex-direction:column; max-height:90vh;">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-        <div>
-          <h3 style="margin:0; font-size:16px; font-weight:700; color:var(--ink-800)">📍 ปักหมุดพิกัดบ้านคนไข้บนแผนที่</h3>
-          <p style="margin:2px 0 0; font-size:11.5px; color:var(--slate-300)">คลิกบนแผนที่ หรือลากหมุดเพื่อเลือกตำแหน่งหลังคาบ้านคนไข้</p>
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px; gap:8px;">
+        <div style="flex:1">
+          <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap">
+            <h3 style="margin:0; font-size:16px; font-weight:700; color:var(--ink-800)">📍 ปักหมุดพิกัดบ้านคนไข้:</h3>
+            <span id="picker-patient-badge" style="display:inline-flex; align-items:center; gap:6px; background:var(--blue-50); border:1px solid var(--blue-200); padding:3px 10px; border-radius:6px; font-size:13px;">
+              <span class="tag tag-blue font-mono" id="picker-patient-hn" style="font-size:12px; font-weight:700">HN -</span>
+              <strong id="picker-patient-name" style="color:var(--ink-800)">ไม่ระบุชื่อ</strong>
+            </span>
+            <select id="picker-patient-select" class="form-input form-select" style="font-size:12px; width:auto; max-width:240px; padding:3px 8px; height:30px; border-color:var(--slate-200);" onchange="pickerSelectPatient(this.value)">
+              <option value="">— เลือก/เปลี่ยนคนไข้ —</option>
+            </select>
+          </div>
+          <p style="margin:4px 0 0; font-size:11.5px; color:var(--slate-300)">คลิกบนแผนที่ หรือลากหมุดเพื่อระบุตำแหน่งหลังคาบ้านคนไข้</p>
         </div>
         <button onclick="closeMapPickerModal()" style="background:none; border:none; font-size:20px; color:var(--slate-400); cursor:pointer; padding:4px;">✕</button>
       </div>
@@ -2634,7 +2787,25 @@ function confirmExcelImport() {
       </div>
 
       <!-- Canvas -->
-      <div id="community-map-canvas" style="height:440px; width:100%; border-radius:8px; border:1px solid var(--slate-100); background:var(--slate-50)"></div>
+      <div id="community-map-canvas" style="height:360px; width:100%; border-radius:8px; border:1px solid var(--slate-100); background:var(--slate-50)"></div>
+
+      <!-- Patient List for GIS Pinning -->
+      <div style="margin-top:10px; border:1px solid var(--slate-100); border-radius:8px; padding:8px 12px; background:var(--canvas);">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:6px">
+          <div style="font-size:12.5px; font-weight:700; color:var(--ink-800); display:flex; align-items:center; gap:6px">
+            <span>📋</span> ค้นหาและปักหมุดบ้านคนไข้
+          </div>
+          <div style="display:flex; gap:6px; align-items:center">
+            <input id="gis-patient-search" class="form-input" placeholder="พิมพ์ชื่อ หรือ HN..." style="font-size:12px; padding:3px 8px; width:160px; height:28px" oninput="renderCommunityPatientList()">
+            <select id="gis-patient-filter-gps" class="form-input form-select" style="font-size:12px; padding:3px 8px; width:130px; height:28px" onchange="renderCommunityPatientList()">
+              <option value="missing">ยังไม่มีพิกัด (ด่วน)</option>
+              <option value="all">ทั้งหมด</option>
+              <option value="has-gps">มีพิกัดแล้ว</option>
+            </select>
+          </div>
+        </div>
+        <div id="gis-patient-list" style="max-height:120px; overflow-y:auto; display:flex; flex-direction:column; gap:4px; font-size:12px"></div>
+      </div>
 
       <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px; font-size:11.5px; color:var(--slate-300)">
         <span>💡 คลิกที่หมุดเพื่อดูข้อมูลผู้ป่วยและกดปุ่ม <strong>"🚗 Google Maps"</strong> เพื่อเปิดระบบนำทางเลี้ยวต่อเลี้ยวไปยังบ้านคนไข้</span>
