@@ -542,11 +542,16 @@ body{font-family:var(--font);background:var(--canvas);color:var(--ink-800);line-
               <option value="risk-desc">ความเสี่ยง สูง→ต่ำ</option>
             </select>
           </div>
-          <button class="btn btn-primary" onclick="go('add-patient', qsel('add-patient'))">+ เพิ่มผู้ป่วย</button>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <button class="btn btn-outline" onclick="openCommunityMapModal()" style="color:var(--teal-600);border-color:var(--teal-400);background:var(--teal-50);font-weight:600;display:flex;align-items:center;gap:6px">
+              <span>🗺️</span> แผนที่พิกัดบ้านคนไข้ (Community GIS)
+            </button>
+            <button class="btn btn-primary" onclick="go('add-patient', qsel('add-patient'))">+ เพิ่มผู้ป่วย</button>
+          </div>
         </div>
         <div class="table-wrap">
           <table class="data-table">
-            <thead><tr><th>HN</th><th>ชื่อ-สกุล</th><th>อายุ / เพศ</th><th>โรค</th><th>eGFR / ระดับ</th><th>ความเสี่ยง</th><th>นัดถัดไป</th><th></th></tr></thead>
+            <thead><tr><th>HN</th><th>ชื่อ-สกุล / ที่อยู่</th><th>อายุ / เพศ</th><th>โรค</th><th>eGFR / ระดับ</th><th>ความเสี่ยง</th><th>นัดถัดไป</th><th>พิกัด / นำทาง</th><th></th></tr></thead>
             <tbody id="pt-tbody"></tbody>
           </table>
         </div>
@@ -587,6 +592,32 @@ body{font-family:var(--font);background:var(--canvas);color:var(--ink-800);line-
         <div class="form-grid-2">
           <div class="form-group"><label class="form-label">ความดันล่าสุด (mmHg)</label><div style="display:flex;gap:8px"><input class="form-input" id="f-sbp" type="number" placeholder="Systolic (บน)"><input class="form-input" id="f-dbp" type="number" placeholder="Diastolic (ล่าง)"></div></div>
           <div class="form-group"><label class="form-label">หมายเหตุ</label><input class="form-input" id="f-note" placeholder="ข้อมูลเพิ่มเติม"></div>
+        </div>
+
+        <div class="form-section-label mt-16">📍 ที่อยู่และพิกัดแผนที่ (สำหรับเยี่ยมบ้าน / Google Maps)</div>
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label class="form-label">ที่อยู่ / ชุมชน</label>
+            <input class="form-input" id="f-address" placeholder="เช่น 99/4 ม.2 บ้านหนองค้อ ต.หนองขาม อ.ศรีราชา">
+          </div>
+          <div class="form-group">
+            <label class="form-label">พิกัด GPS (ละติจูด, ลองจิจูด)</label>
+            <div style="display:flex;gap:6px;align-items:center">
+              <input class="form-input" id="f-lat" placeholder="ละติจูด (Lat) เช่น 13.1388" style="flex:1" step="any" type="number">
+              <input class="form-input" id="f-lng" placeholder="ลองจิจูด (Lng) เช่น 100.9955" style="flex:1" step="any" type="number">
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;margin-bottom:8px">
+          <button type="button" class="btn btn-outline btn-sm" onclick="getGPSLocation()" style="color:var(--teal-600);border-color:var(--teal-400);background:var(--teal-50);display:flex;align-items:center;gap:4px">
+            <span>📍</span> ดึงพิกัดปัจจุบัน (GPS)
+          </button>
+          <button type="button" class="btn btn-outline btn-sm" onclick="openMapPickerModal()" style="color:var(--blue-600);border-color:var(--blue-300);background:var(--blue-50);display:flex;align-items:center;gap:4px">
+            <span>🗺️</span> ปักหมุดบนแผนที่
+          </button>
+          <button type="button" class="btn btn-ghost btn-sm" onclick="testGoogleMapsFromForm()" style="color:var(--ink-700);display:flex;align-items:center;gap:4px">
+            <span>↗</span> ทดสอบเปิด Google Maps
+          </button>
         </div>
 
         <div class="row mt-20">
@@ -1030,6 +1061,8 @@ function riskChip(risk){
 }
 
 // ── PATIENTS ──────────────────────────────────────────
+function escHtml(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+
 function savePt(){
   const hn=document.getElementById('f-hn').value.trim();
   const name=document.getElementById('f-name').value.trim();
@@ -1040,6 +1073,9 @@ function savePt(){
   const pt={id:eid||DB.nid('patients'),hn,name,
     sex:document.getElementById('f-sex').value,dob:getDobISO(),
     phone:document.getElementById('f-phone').value,disease:document.getElementById('f-disease').value,
+    address:document.getElementById('f-address').value.trim(),
+    lat:document.getElementById('f-lat').value.trim(),
+    lng:document.getElementById('f-lng').value.trim(),
     med:document.getElementById('f-med').value,wt:document.getElementById('f-wt').value,
     ht:document.getElementById('f-ht').value,waist:document.getElementById('f-waist').value,
     sbp:document.getElementById('f-sbp').value,dbp:document.getElementById('f-dbp').value,
@@ -1055,13 +1091,13 @@ function savePt(){
   go('patient-list', qsel('patient-list'));
 }
 function clearPtForm(){
-  ['f-hn','f-name','f-dob-d','f-dob-m','f-dob-y','f-phone','f-med','f-wt','f-ht','f-waist','f-sbp','f-dbp','f-note','f-edit-id'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});const _ap=document.getElementById('f-age-preview');if(_ap)_ap.textContent='';
+  ['f-hn','f-name','f-dob-d','f-dob-m','f-dob-y','f-phone','f-address','f-lat','f-lng','f-med','f-wt','f-ht','f-waist','f-sbp','f-dbp','f-note','f-edit-id'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});const _ap=document.getElementById('f-age-preview');if(_ap)_ap.textContent='';
   document.getElementById('f-sex').value='ชาย';
   document.getElementById('f-disease').value='กลุ่มเสี่ยง HT (Pre-HT)';
 }
 function editPt(id){
   const p=DB.get('patients').find(x=>x.id===id);if(!p)return;
-  const flds={hn:p.hn,name:p.name,phone:p.phone||'',med:p.med||'','wt':p.wt||'','ht':p.ht||'',waist:p.waist||'',sbp:p.sbp||'',dbp:p.dbp||'',note:p.note||''};setDobFields(p.dob||'');const ap=document.getElementById('f-age-preview');if(ap){if(p.dob)ap.textContent='อายุปัจจุบัน: '+calcAgeFromDob(p.dob)+' ปี';else if(p.age)ap.textContent='⚠️ ข้อมูลเดิมระบุอายุ '+p.age+' ปี — กรุณากรอกวันเกิด';}
+  const flds={hn:p.hn,name:p.name,phone:p.phone||'',address:p.address||'',lat:p.lat||'',lng:p.lng||'',med:p.med||'','wt':p.wt||'','ht':p.ht||'',waist:p.waist||'',sbp:p.sbp||'',dbp:p.dbp||'',note:p.note||''};setDobFields(p.dob||'');const ap=document.getElementById('f-age-preview');if(ap){if(p.dob)ap.textContent='อายุปัจจุบัน: '+calcAgeFromDob(p.dob)+' ปี';else if(p.age)ap.textContent='⚠️ ข้อมูลเดิมระบุอายุ '+p.age+' ปี — กรุณากรอกวันเกิด';}
   Object.entries(flds).forEach(([k,v])=>{const el=document.getElementById('f-'+k);if(el)el.value=v;});setDobFields(p.dob||'');
   document.getElementById('f-sex').value=p.sex||'ชาย';
   document.getElementById('f-disease').value=p.disease||'กลุ่มเสี่ยง HT (Pre-HT)';
@@ -1079,7 +1115,7 @@ function renderPtTable(){
   const q=(document.getElementById('pt-search')||{value:''}).value.toLowerCase();
   const sortVal=(document.getElementById('pt-sort')||{value:'name-asc'}).value;
   const riskOrder={low:0,moderate:1,high:2,vhigh:3};
-  let pts=DB.get('patients').filter(p=>!q||p.name.toLowerCase().includes(q)||p.hn.toLowerCase().includes(q));
+  let pts=DB.get('patients').filter(p=>!q||p.name.toLowerCase().includes(q)||p.hn.toLowerCase().includes(q)||(p.address||'').toLowerCase().includes(q));
   pts.sort((a,b)=>{
     if(sortVal==='name-asc')return a.name.localeCompare(b.name,'th');
     if(sortVal==='name-desc')return b.name.localeCompare(a.name,'th');
@@ -1099,18 +1135,351 @@ function renderPtTable(){
   tbody.innerHTML=pts.map(p=>{
     const r=p.ckdResult;
     const next=appts.filter(a=>a.patientId===p.id&&new Date(a.date)>=now).sort((a,b)=>new Date(a.date)-new Date(b.date))[0];
+    const hasGps = p.lat && p.lng && Number.isFinite(Number(p.lat)) && Number.isFinite(Number(p.lng));
+    const hasAddr = p.address && p.address.trim().length > 0;
+    let mapBtn = '';
+    if(hasGps){
+      mapBtn = `<button type="button" class="btn btn-outline btn-sm" onclick="openGoogleMaps(${p.id})" style="color:var(--teal-600);border-color:var(--teal-400);background:var(--teal-50);font-size:11.5px;padding:3px 8px;border-radius:4px;display:inline-flex;align-items:center;gap:3px;font-weight:600" title="พิกัด GPS: ${p.lat}, ${p.lng}">📍 Maps</button>`;
+    } else if(hasAddr){
+      mapBtn = `<button type="button" class="btn btn-outline btn-sm" onclick="openGoogleMaps(${p.id})" style="color:var(--blue-600);border-color:var(--blue-300);background:var(--blue-50);font-size:11.5px;padding:3px 8px;border-radius:4px;display:inline-flex;align-items:center;gap:3px" title="ค้นหาที่อยู่บน Google Maps: ${escHtml(p.address)}">📍 ค้นที่อยู่</button>`;
+    } else {
+      mapBtn = `<button type="button" class="btn btn-ghost btn-sm" onclick="editPt(${p.id})" style="color:var(--slate-300);font-size:11px;padding:3px 6px" title="คลิกแก้ไขเพื่อระบุพิกัดหรือที่อยู่">+ ใส่พิกัด</button>`;
+    }
     return `<tr>
-      <td><span class="tag tag-blue">${p.hn}</span></td>
-      <td><div style="font-weight:600;font-size:13.5px">${p.name}</div>${p.phone?`<div class="text-xs text-muted font-mono">${p.phone}</div>`:''}</td>
-      <td><span class="text-sm">${p.dob?calcAgeFromDob(p.dob):(p.age||'—')} ปี / ${p.sex||'—'}</span></td>
-      <td style="font-size:12.5px;max-width:140px">${p.disease||'—'}</td>
+      <td><span class="tag tag-blue">${escHtml(p.hn)}</span></td>
+      <td>
+        <div style="font-weight:600;font-size:13.5px">${escHtml(p.name)}</div>
+        ${p.phone?`<div class="text-xs text-muted font-mono">📞 ${escHtml(p.phone)}</div>`:''}
+        ${hasAddr?`<div class="text-xs text-muted" style="max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${escHtml(p.address)}">🏠 ${escHtml(p.address)}</div>`:''}
+      </td>
+      <td><span class="text-sm">${p.dob?calcAgeFromDob(p.dob):(p.age||'—')} ปี / ${escHtml(p.sex||'—')}</span></td>
+      <td style="font-size:12.5px;max-width:140px">${escHtml(p.disease||'—')}</td>
       <td>${r?`<span class="font-mono text-sm" style="font-weight:700;color:var(--teal-600)">${r.eGFR}</span><div class="text-xs text-muted">${r.gStage} / ${r.aStage}</div>`:'<span class="text-muted text-xs">ยังไม่ตรวจ</span>'}</td>
       <td>${riskChip(r?.risk)}</td>
       <td><span class="text-sm font-mono">${next?next.date:'—'}</span></td>
+      <td>${mapBtn}</td>
       <td><div class="row" style="gap:4px"><button class="btn btn-outline btn-icon btn-sm" onclick="editPt(${p.id})" title="แก้ไข" style="color:var(--teal-600);border-color:var(--teal-600)">✎</button><button class="btn btn-danger btn-icon btn-sm" onclick="delPt(${p.id})" title="ลบ">✕</button></div></td>
     </tr>`;
   }).join('');
 }
+
+// ── GEOLOCATION & GOOGLE MAPS ──────────────────────────
+function getGPSLocation(){
+  if(!navigator.geolocation){
+    return toast('อุปกรณ์หรือเบราว์เซอร์นี้ไม่รองรับ Geolocation','error');
+  }
+  toast('กำลังค้นหาสัญญาณดาวเทียม GPS...','warning');
+  navigator.geolocation.getCurrentPosition(
+    pos=>{
+      const lat=pos.coords.latitude.toFixed(6);
+      const lng=pos.coords.longitude.toFixed(6);
+      document.getElementById('f-lat').value=lat;
+      document.getElementById('f-lng').value=lng;
+      toast(`ดึงพิกัดสำเร็จ: ${lat}, ${lng} (ความแม่นยำ ~${Math.round(pos.coords.accuracy)} ม.)`,'success');
+    },
+    err=>{
+      let msg='ไม่สามารถดึงพิกัดได้: ';
+      if(err.code===1) msg+='กรุณาอนุญาตการเข้าถึงตำแหน่งที่ตั้ง (Location Permission)';
+      else if(err.code===2) msg+='ไม่พบสัญญาณตำแหน่งที่ตั้ง';
+      else if(err.code===3) msg+='หมดเวลาค้นหาสัญญาณ';
+      else msg+=err.message;
+      toast(msg,'error');
+    },
+    {enableHighAccuracy:true,timeout:12000,maximumAge:0}
+  );
+}
+
+function getGoogleMapsUrl(p){
+  if(p.lat&&p.lng&&Number.isFinite(Number(p.lat))&&Number.isFinite(Number(p.lng))){
+    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.lat+','+p.lng)}`;
+  }
+  if(p.address&&p.address.trim()){
+    const addr=p.address.trim();
+    const q=addr.includes('ชลบุรี')?addr:`${addr} อ.ศรีราชา จ.ชลบุรี`;
+    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`;
+  }
+  return null;
+}
+
+function openGoogleMaps(patientId){
+  const p=DB.get('patients').find(x=>x.id===Number(patientId));
+  if(!p)return toast('ไม่พบข้อมูลผู้ป่วย','error');
+  const url=getGoogleMapsUrl(p);
+  if(!url){
+    return toast('ผู้ป่วยรายนี้ยังไม่มีพิกัด GPS หรือที่อยู่ กรุณากดแก้ไขเพื่อใส่ข้อมูล','warning');
+  }
+  window.open(url,'_blank');
+}
+
+function testGoogleMapsFromForm(){
+  const lat=document.getElementById('f-lat').value.trim();
+  const lng=document.getElementById('f-lng').value.trim();
+  const address=document.getElementById('f-address').value.trim();
+  const url=getGoogleMapsUrl({lat,lng,address});
+  if(!url){
+    return toast('กรุณาระบุที่อยู่หรือพิกัดก่อนทดสอบ','warning');
+  }
+  window.open(url,'_blank');
+}
+
+// ── LEAFLET & INTERACTIVE MAPS ────────────────────────
+let _leafletLoaded = false;
+let _pickerMap = null;
+let _pickerMarker = null;
+let _communityMap = null;
+let _communityLayer = null;
+
+function loadLeaflet(callback){
+  if(window.L){
+    _leafletLoaded=true;
+    return callback();
+  }
+  toast('กำลังโหลดระบบแผนที่...','warning');
+  const link=document.createElement('link');
+  link.rel='stylesheet';
+  link.href='https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+  document.head.appendChild(link);
+
+  const script=document.createElement('script');
+  script.src='https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+  script.onload=()=>{
+    _leafletLoaded=true;
+    callback();
+  };
+  script.onerror=()=>{
+    toast('ไม่สามารถโหลดแผนที่ออนไลน์ได้ (โหมดออฟไลน์: สามารถพิมพ์พิกัดหรือดึง GPS ได้ตามปกติ)','error');
+  };
+  document.head.appendChild(script);
+}
+
+// ── MAP PICKER MODAL ──────────────────────────────────
+function openMapPickerModal(){
+  const modal=document.getElementById('map-picker-modal');
+  modal.style.display='flex';
+  loadLeaflet(()=>{
+    setTimeout(()=>initPickerMap(),100);
+  });
+}
+
+function closeMapPickerModal(){
+  document.getElementById('map-picker-modal').style.display='none';
+}
+
+function initPickerMap(){
+  const curLat=parseFloat(document.getElementById('f-lat').value);
+  const curLng=parseFloat(document.getElementById('f-lng').value);
+  // Default to Nong Kho Health Center: 13.1388, 100.9955
+  const hasCoord=Number.isFinite(curLat)&&Number.isFinite(curLng)&&curLat!==0&&curLng!==0;
+  const startLat=hasCoord?curLat:13.1388;
+  const startLng=hasCoord?curLng:100.9955;
+  const zoom=hasCoord?16:14;
+
+  const container=document.getElementById('picker-map-canvas');
+  if(!_pickerMap){
+    _pickerMap=L.map(container).setView([startLat,startLng],zoom);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+      maxZoom:19,
+      attribution:'© OpenStreetMap'
+    }).addTo(_pickerMap);
+
+    _pickerMarker=L.marker([startLat,startLng],{draggable:true}).addTo(_pickerMap);
+    _pickerMarker.on('dragend',function(e){
+      const pos=e.target.getLatLng();
+      updatePickerCoords(pos.lat,pos.lng);
+    });
+
+    _pickerMap.on('click',function(e){
+      _pickerMarker.setLatLng(e.latlng);
+      updatePickerCoords(e.latlng.lat,e.latlng.lng);
+    });
+  } else {
+    _pickerMap.invalidateSize();
+    _pickerMap.setView([startLat,startLng],zoom);
+    _pickerMarker.setLatLng([startLat,startLng]);
+  }
+
+  updatePickerCoords(startLat,startLng);
+}
+
+function updatePickerCoords(lat,lng){
+  document.getElementById('picker-lat-val').textContent=Number(lat).toFixed(6);
+  document.getElementById('picker-lng-val').textContent=Number(lng).toFixed(6);
+  document.getElementById('picker-marker-info').innerHTML=`📍 <strong>${Number(lat).toFixed(6)}, ${Number(lng).toFixed(6)}</strong> <span style="color:var(--slate-300)">(ลากหมุดหรือคลิกบนแผนที่เพื่อย้ายตำแหน่ง)</span>`;
+}
+
+function confirmPickerLocation(){
+  const lat=document.getElementById('picker-lat-val').textContent;
+  const lng=document.getElementById('picker-lng-val').textContent;
+  if(lat!=='-'&&lng!=='-'){
+    document.getElementById('f-lat').value=lat;
+    document.getElementById('f-lng').value=lng;
+    toast(`ปักหมุดสำเร็จ: ${lat}, ${lng}`);
+  }
+  closeMapPickerModal();
+}
+
+function pickerGPS(){
+  if(!navigator.geolocation) return toast('อุปกรณ์ไม่รองรับ GPS','error');
+  toast('กำลังดึงตำแหน่ง GPS...','warning');
+  navigator.geolocation.getCurrentPosition(
+    pos=>{
+      const lat=pos.coords.latitude;
+      const lng=pos.coords.longitude;
+      if(_pickerMap&&_pickerMarker){
+        _pickerMap.setView([lat,lng],17);
+        _pickerMarker.setLatLng([lat,lng]);
+      }
+      updatePickerCoords(lat,lng);
+      toast('ดึงพิกัด GPS สำเร็จ');
+    },
+    err=>toast('ดึง GPS ไม่สำเร็จ: '+err.message,'error'),
+    {enableHighAccuracy:true,timeout:10000}
+  );
+}
+
+function searchPickerPlace(){
+  const q=document.getElementById('picker-search-input').value.trim();
+  if(!q) return toast('พิมพ์ชื่อสถานที่ ชุมชน หรือซอยที่ต้องการค้นหา','warning');
+  toast('กำลังค้นหาสถานที่...','warning');
+  fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q + ' ศรีราชา ชลบุรี')}&limit=1`)
+    .then(r=>r.json())
+    .then(data=>{
+      if(data&&data.length){
+        const lat=parseFloat(data[0].lat);
+        const lng=parseFloat(data[0].lon);
+        if(_pickerMap&&_pickerMarker){
+          _pickerMap.setView([lat,lng],16);
+          _pickerMarker.setLatLng([lat,lng]);
+        }
+        updatePickerCoords(lat,lng);
+        toast('พบสถานที่: '+data[0].display_name.slice(0,35)+'...');
+      } else {
+        toast('ไม่พบสถานที่ ลองพิมพ์ชื่อหลัก เช่น "หนองค้อ", "หนองขาม", "ปิ่นทอง"','error');
+      }
+    })
+    .catch(()=>toast('ค้นหาสถานที่ไม่สำเร็จ กรุณาคลิกเลือกบนแผนที่โดยตรง','error'));
+}
+
+// ── COMMUNITY HEALTH GIS MAP MODAL ────────────────────
+let _communityFilter = 'all';
+
+function openCommunityMapModal(){
+  const modal=document.getElementById('community-map-modal');
+  modal.style.display='flex';
+
+  loadLeaflet(()=>{
+    setTimeout(()=>initCommunityMap(),100);
+  });
+}
+
+function closeCommunityMapModal(){
+  document.getElementById('community-map-modal').style.display='none';
+}
+
+function initCommunityMap(){
+  const container=document.getElementById('community-map-canvas');
+  if(!_communityMap){
+    _communityMap=L.map(container).setView([13.1388,100.9955],13);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+      maxZoom:19,
+      attribution:'© OpenStreetMap · รพ.สต.บ้านหนองค้อ'
+    }).addTo(_communityMap);
+  } else {
+    _communityMap.invalidateSize();
+  }
+  renderCommunityMarkers();
+}
+
+function filterCommunityMap(type){
+  _communityFilter=type;
+  document.querySelectorAll('.gis-tab-btn').forEach(b=>b.classList.remove('active'));
+  const btn=document.getElementById('gis-tab-'+type);
+  if(btn)btn.classList.add('active');
+  renderCommunityMarkers();
+}
+
+function renderCommunityMarkers(){
+  if(!_communityMap||!window.L) return;
+  if(_communityLayer){
+    _communityMap.removeLayer(_communityLayer);
+  }
+  _communityLayer=L.layerGroup().addTo(_communityMap);
+
+  const pts=DB.get('patients');
+  const riskColors={
+    'ต่ำ':'#059669',
+    'ปานกลาง':'#d97706',
+    'สูง':'#ea580c',
+    'สูงมาก':'#dc2626',
+    'ไตวาย':'#991b1b'
+  };
+
+  let validCount=0;
+  let highRiskCount=0;
+  const bounds=[];
+
+  pts.forEach(p=>{
+    const hasCoord=p.lat&&p.lng&&Number.isFinite(Number(p.lat))&&Number.isFinite(Number(p.lng));
+    const risk=p.ckdResult?.risk||'ยังไม่คัดกรอง';
+    const isHigh=['สูง','สูงมาก','ไตวาย'].includes(risk);
+    if(isHigh) highRiskCount++;
+
+    if(!hasCoord) return;
+    if(_communityFilter==='high'&&!isHigh) return;
+
+    validCount++;
+    const lat=Number(p.lat);
+    const lng=Number(p.lng);
+    bounds.push([lat,lng]);
+
+    const color=riskColors[risk]||'#64748b';
+    const gmapsUrl=getGoogleMapsUrl(p);
+
+    const marker=L.circleMarker([lat,lng],{
+      radius:isHigh?10:7,
+      fillColor:color,
+      color:'#ffffff',
+      weight:2,
+      opacity:1,
+      fillOpacity:0.9
+    });
+
+    const popupHtml=`
+      <div style="font-family:var(--font);font-size:12.5px;min-width:210px;line-height:1.5">
+        <div style="font-weight:700;font-size:14px;color:var(--ink-800);margin-bottom:2px">${escHtml(p.name)}</div>
+        <div style="font-size:11px;color:var(--slate-300);margin-bottom:6px">HN: ${escHtml(p.hn)} · ${escHtml(p.disease||'ไม่ระบุ')}</div>
+        <div style="margin-bottom:4px"><strong>eGFR:</strong> <span style="font-family:var(--mono);font-weight:700;color:var(--teal-600)">${escHtml(p.ckdResult?.eGFR??'—')}</span> (${escHtml(p.ckdResult?.gStage??'—')})</div>
+        <div style="margin-bottom:6px"><strong>ระดับความเสี่ยง:</strong> <span style="font-weight:700;color:${color}">${escHtml(risk)}</span></div>
+        ${p.address?`<div style="font-size:11px;color:var(--ink-700);margin-bottom:8px;background:var(--slate-50);padding:4px 6px;border-radius:4px">🏠 ${escHtml(p.address)}</div>`:''}
+        <div style="display:flex;gap:6px;margin-top:6px">
+          <button onclick="window.open('${gmapsUrl}','_blank')" style="background:var(--blue-600);color:#fff;border:none;padding:5px 10px;border-radius:4px;font-size:11px;font-weight:600;cursor:pointer;flex:1;display:flex;align-items:center;justify-content:center;gap:3px">
+            🚗 Google Maps
+          </button>
+          <button onclick="closeCommunityMapModal();dashboardOpenPatient(${p.id})" style="background:var(--teal-50);color:var(--teal-600);border:1px solid var(--teal-200);padding:5px 8px;border-radius:4px;font-size:11px;font-weight:600;cursor:pointer">
+            ข้อมูล
+          </button>
+        </div>
+      </div>
+    `;
+
+    marker.bindPopup(popupHtml);
+    _communityLayer.addLayer(marker);
+  });
+
+  const totalEl=document.getElementById('gis-count-total');
+  const gpsEl=document.getElementById('gis-count-gps');
+  const highEl=document.getElementById('gis-count-high');
+  if(totalEl) totalEl.textContent=pts.length+' ราย';
+  if(gpsEl) gpsEl.textContent=validCount+' หลังคาเรือน';
+  if(highEl) highEl.textContent=highRiskCount+' ราย';
+
+  if(bounds.length>0){
+    _communityMap.fitBounds(bounds,{padding:[40,40],maxZoom:16});
+  } else {
+    _communityMap.setView([13.1388,100.9955],13);
+  }
+}
+
 
 // ── CKD ───────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded',()=>{
@@ -1566,10 +1935,13 @@ function renderReports(){
 
 function doExport(){
   const pts=DB.get('patients');
-  const hdr='HN,ชื่อ-สกุล,อายุ,เพศ,โรค,eGFR,ระดับ G,ระดับ A,ความเสี่ยง,FBS,HbA1C,Microalb(mg/L),UACR,Creatinine,K,AST,ALT,Cholesterol,TG,HDL,LDL,ส่งต่อ\n';
+  const hdr='HN,ชื่อ-สกุล,อายุ,เพศ,เบอร์โทร,ที่อยู่,ละติจูด,ลองจิจูด,โรค,eGFR,ระดับ G,ระดับ A,ความเสี่ยง,FBS,HbA1C,Microalb(mg/L),UACR,Creatinine,K,AST,ALT,Cholesterol,TG,HDL,LDL,ส่งต่อ\n';
   const rows=pts.map(p=>{
     const r=p.ckdResult||{};
-    return[p.hn,p.name,p.age,p.sex,p.disease,
+    const ageVal = p.dob ? calcAgeFromDob(p.dob) : (p.age||'');
+    const safeStr = s => `"${String(s||'').replace(/"/g,'""')}"`;
+    return[
+      p.hn, safeStr(p.name), ageVal, p.sex||'', p.phone||'', safeStr(p.address||''), p.lat||'', p.lng||'', safeStr(p.disease||''),
       r.eGFR||'',r.gStage||'',r.aStage||'',r.risk||'ยังไม่คัดกรอง',
       r.fbs||'',r.hba1c||'',r.microalb||'',r.uacr||'',
       r.cr||'',r.k||'',r.ast||'',r.alt||'',
@@ -1869,6 +2241,9 @@ function processImportRows(rows) {
     dob: ['birth', 'dob', 'วันเกิด', 'วันเดือนปีเกิด', 'birthdate', 'birth_date', 'ปีเกิด', 'วดปเกิด'],
     sex: ['sex', 'gender', 'เพศ'],
     phone: ['phone', 'tel', 'เบอร์โทร', 'เบอร์โทรศัพท์', 'โทร', 'contact', 'เบอร์'],
+    address: ['address', 'addr', 'ที่อยู่', 'บ้านเลขที่', 'หมู่', 'ชุมชน', 'ที่อยู่ปัจจุบัน'],
+    lat: ['lat', 'latitude', 'ละติจูด', 'gps_lat'],
+    lng: ['lng', 'lon', 'longitude', 'ลองจิจูด', 'gps_lng'],
     cr: ['cr', 'creatinine', 'ค่าไต', 'ครีอะตินีน', 'creatinine_value'],
     uacr: ['uacr', 'microalb', 'albumin', 'โปรตีนในปัสสาวะ', 'uacr_value', 'microalbumin'],
     fbs: ['fbs', 'glucose', 'sugar', 'น้ำตาล', 'fbs_value', 'น้ำตาลในเลือด'],
@@ -1887,7 +2262,7 @@ function processImportRows(rows) {
   }
 
   const statusEl = document.getElementById('excel-mapping-status');
-  const labels = {hn:'HN', name:'ชื่อ-สกุล', dob:'วันเกิด', sex:'เพศ', phone:'เบอร์โทร', cr:'Creatinine', uacr:'UACR/Microalb', fbs:'FBS น้ำตาล', sbp:'ความดันบน', dbp:'ความดันล่าง'};
+  const labels = {hn:'HN', name:'ชื่อ-สกุล', dob:'วันเกิด', sex:'เพศ', phone:'เบอร์โทร', address:'ที่อยู่', lat:'พิกัด Lat', lng:'พิกัด Lng', cr:'Creatinine', uacr:'UACR/Microalb', fbs:'FBS น้ำตาล', sbp:'ความดันบน', dbp:'ความดันล่าง'};
 
   statusEl.innerHTML = Object.entries(_excelMapping).map(([key, idx]) => {
     const found = idx !== -1;
@@ -1927,6 +2302,9 @@ function processImportRows(rows) {
       sex: sex,
       dob: dob,
       phone: _excelMapping.phone !== -1 ? String(row[_excelMapping.phone] || '').trim() : "",
+      address: _excelMapping.address !== -1 ? String(row[_excelMapping.address] || '').trim() : "",
+      lat: _excelMapping.lat !== -1 ? String(row[_excelMapping.lat] || '').trim() : "",
+      lng: _excelMapping.lng !== -1 ? String(row[_excelMapping.lng] || '').trim() : "",
       cr: _excelMapping.cr !== -1 ? parseFloat(row[_excelMapping.cr]) : NaN,
       uacr: _excelMapping.uacr !== -1 ? parseFloat(row[_excelMapping.uacr]) : NaN,
       fbs: _excelMapping.fbs !== -1 ? parseFloat(row[_excelMapping.fbs]) : NaN,
@@ -2013,6 +2391,9 @@ function confirmExcelImport() {
       sex: pt.sex,
       dob: pt.dob || (pIdx !== -1 ? pts[pIdx].dob : ""),
       phone: pt.phone || (pIdx !== -1 ? pts[pIdx].phone : ""),
+      address: pt.address || (pIdx !== -1 ? (pts[pIdx].address || "") : ""),
+      lat: pt.lat || (pIdx !== -1 ? (pts[pIdx].lat || "") : ""),
+      lng: pt.lng || (pIdx !== -1 ? (pts[pIdx].lng || "") : ""),
       disease: pIdx !== -1 ? pts[pIdx].disease : "กลุ่มเสี่ยง HT (Pre-HT)",
       med: pIdx !== -1 ? pts[pIdx].med : "",
       wt: pIdx !== -1 ? pts[pIdx].wt : "",
@@ -2172,6 +2553,92 @@ function confirmExcelImport() {
       <div style="display:flex; gap:10px; margin-top:16px;">
         <button class="btn btn-secondary" onclick="closeExcelImportModal()" style="flex:1">ยกเลิก</button>
         <button class="btn btn-primary" id="excel-confirm-btn" onclick="confirmExcelImport()" style="flex:1; display:none; background:var(--blue-600)">ยืนยันนำเข้าข้อมูล</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── MAP PICKER MODAL ─── -->
+  <div class="modal-bg" id="map-picker-modal" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.6); backdrop-filter:blur(4px); z-index:2000; align-items:center; justify-content:center;">
+    <div class="modal-content" style="background:var(--white); border-radius:12px; padding:20px; max-width:720px; width:94%; box-shadow:0 20px 25px -5px rgba(0,0,0,0.2); display:flex; flex-direction:column; max-height:90vh;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+        <div>
+          <h3 style="margin:0; font-size:16px; font-weight:700; color:var(--ink-800)">📍 ปักหมุดพิกัดบ้านคนไข้บนแผนที่</h3>
+          <p style="margin:2px 0 0; font-size:11.5px; color:var(--slate-300)">คลิกบนแผนที่ หรือลากหมุดเพื่อเลือกตำแหน่งหลังคาบ้านคนไข้</p>
+        </div>
+        <button onclick="closeMapPickerModal()" style="background:none; border:none; font-size:20px; color:var(--slate-400); cursor:pointer; padding:4px;">✕</button>
+      </div>
+
+      <!-- Search & GPS toolbar -->
+      <div style="display:flex; gap:8px; margin-bottom:10px; flex-wrap:wrap">
+        <div style="flex:1; min-width:200px; display:flex; gap:4px">
+          <input id="picker-search-input" class="form-input" placeholder="ค้นหาสถานที่ เช่น วัดหนองค้อ, ปิ่นทอง..." style="font-size:12.5px" onkeydown="if(event.key==='Enter')searchPickerPlace()">
+          <button class="btn btn-outline btn-sm" onclick="searchPickerPlace()" style="white-space:nowrap">ค้นหา</button>
+        </div>
+        <button class="btn btn-outline btn-sm" onclick="pickerGPS()" style="color:var(--teal-600); border-color:var(--teal-400); background:var(--teal-50); white-space:nowrap; display:flex; align-items:center; gap:4px">
+          <span>📍</span> ดึง GPS ตรงนี้
+        </button>
+      </div>
+
+      <!-- Canvas -->
+      <div id="picker-map-canvas" style="height:360px; width:100%; border-radius:8px; border:1px solid var(--slate-100); background:var(--slate-50)"></div>
+
+      <!-- Footer info & Actions -->
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-top:12px; flex-wrap:wrap; gap:8px">
+        <div id="picker-marker-info" style="font-size:12px; color:var(--ink-700)">
+          พิกัดที่เลือก: Lat <span id="picker-lat-val" style="font-family:var(--mono); font-weight:700">-</span>, Lng <span id="picker-lng-val" style="font-family:var(--mono); font-weight:700">-</span>
+        </div>
+        <div style="display:flex; gap:8px">
+          <button class="btn btn-secondary" onclick="closeMapPickerModal()">ยกเลิก</button>
+          <button class="btn btn-primary" onclick="confirmPickerLocation()" style="background:var(--teal-600)">✓ บันทึกพิกัดนี้ลงฟอร์ม</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── COMMUNITY HEALTH GIS MAP MODAL ─── -->
+  <div class="modal-bg" id="community-map-modal" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.65); backdrop-filter:blur(4px); z-index:2000; align-items:center; justify-content:center;">
+    <div class="modal-content" style="background:var(--white); border-radius:12px; padding:20px; max-width:960px; width:95%; box-shadow:0 25px 30px -5px rgba(0,0,0,0.25); display:flex; flex-direction:column; max-height:92vh;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+        <div>
+          <h3 style="margin:0; font-size:17px; font-weight:700; color:var(--ink-800); display:flex; align-items:center; gap:6px">
+            <span>🗺️</span> แผนที่สุขภาพชุมชนและพิกัดบ้านผู้ป่วย (Community Health GIS)
+          </h3>
+          <p style="margin:2px 0 0; font-size:12px; color:var(--slate-300)">
+            โรงพยาบาลส่งเสริมสุขภาพตำบลบ้านหนองค้อ อำเภอศรีราชา จังหวัดชลบุรี · งานเวชปฏิบัติครอบครัวและการเยี่ยมบ้านเชิงรุก
+          </p>
+        </div>
+        <button onclick="closeCommunityMapModal()" style="background:none; border:none; font-size:22px; color:var(--slate-400); cursor:pointer; padding:4px;">✕</button>
+      </div>
+
+      <!-- Stat Badges & Filter Bar -->
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:10px; background:var(--canvas); padding:8px 12px; border-radius:8px; border:1px solid var(--slate-100);">
+        <div style="display:flex; gap:12px; align-items:center; font-size:12px; flex-wrap:wrap">
+          <span>ผู้ป่วยทั้งหมด: <strong id="gis-count-total" style="color:var(--blue-600)">0</strong></span>
+          <span>มีพิกัด GPS: <strong id="gis-count-gps" style="color:var(--teal-600)">0</strong></span>
+          <span>กลุ่มเสี่ยงสูง (เยี่ยมบ้านด่วน): <strong id="gis-count-high" style="color:var(--rose-600)">0</strong></span>
+        </div>
+        <div style="display:flex; gap:4px;">
+          <button id="gis-tab-all" class="btn btn-sm btn-outline gis-tab-btn active" onclick="filterCommunityMap('all')" style="font-size:11.5px; padding:3px 10px">ทั้งหมด</button>
+          <button id="gis-tab-high" class="btn btn-sm btn-outline gis-tab-btn" onclick="filterCommunityMap('high')" style="font-size:11.5px; padding:3px 10px; color:var(--rose-600); border-color:var(--rose-400)">เฉพาะกลุ่มเสี่ยงสูง</button>
+        </div>
+      </div>
+
+      <!-- Map Legend -->
+      <div style="display:flex; gap:12px; font-size:11px; color:var(--ink-700); margin-bottom:8px; flex-wrap:wrap; align-items:center">
+        <span style="font-weight:600; color:var(--slate-400)">สัญลักษณ์ระดับไต:</span>
+        <span style="display:inline-flex; align-items:center; gap:4px"><span style="width:10px; height:10px; border-radius:50%; background:#059669; display:inline-block"></span> ปกติ/เสี่ยงต่ำ</span>
+        <span style="display:inline-flex; align-items:center; gap:4px"><span style="width:10px; height:10px; border-radius:50%; background:#d97706; display:inline-block"></span> เสี่ยงปานกลาง (G1-2)</span>
+        <span style="display:inline-flex; align-items:center; gap:4px"><span style="width:10px; height:10px; border-radius:50%; background:#ea580c; display:inline-block"></span> เสี่ยงสูง (G3)</span>
+        <span style="display:inline-flex; align-items:center; gap:4px"><span style="width:10px; height:10px; border-radius:50%; background:#dc2626; display:inline-block"></span> ไตวาย/รุนแรง (G4-5)</span>
+        <span style="display:inline-flex; align-items:center; gap:4px"><span style="width:10px; height:10px; border-radius:50%; background:#64748b; display:inline-block"></span> ยังไม่คัดกรอง</span>
+      </div>
+
+      <!-- Canvas -->
+      <div id="community-map-canvas" style="height:440px; width:100%; border-radius:8px; border:1px solid var(--slate-100); background:var(--slate-50)"></div>
+
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px; font-size:11.5px; color:var(--slate-300)">
+        <span>💡 คลิกที่หมุดเพื่อดูข้อมูลผู้ป่วยและกดปุ่ม <strong>"🚗 Google Maps"</strong> เพื่อเปิดระบบนำทางเลี้ยวต่อเลี้ยวไปยังบ้านคนไข้</span>
+        <button class="btn btn-secondary btn-sm" onclick="closeCommunityMapModal()">ปิดหน้าต่าง</button>
       </div>
     </div>
   </div>

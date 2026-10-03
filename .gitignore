@@ -1,0 +1,9 @@
+# OS files
+.DS_Store
+Thumbs.db
+
+# Backup preview history folder
+preview-history/
+
+# Raw screenshot files (keep in local docs, not in production build)
+*.png
